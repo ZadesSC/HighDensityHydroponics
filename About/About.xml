@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<modMetaData>
+	<name>HighDensityHydroponics</name>
+	<author>Yume|MapleApple|ZouHb|Zades</author>
+    <supportedVersions>
+		<li>1.6</li>
+    </supportedVersions>
+	<loadAfter> 
+	</loadAfter>
+	<packageId>MapleApple.HighDensityHydroponics.Fixed.ZouHb.zades</packageId>
+	<description>Updated to 1.6 and rewrote a decent chunk of how it worked.</description>
+</modMetaData>

@@ -1,0 +1,47 @@
+# Ignore build outputs
+bin/
+obj/
+*.user
+*.suo
+
+# Rider project files
+.idea/
+*.iml
+/.idea/.idea.*
+/.idea/.idea_modules/
+.idea_modules/
+
+# Rider caches
+/.idea/workspace.xml
+/.idea/tasks.xml
+/.idea/usage.statistics.xml
+/.idea/dictionaries
+/.idea/shelf/
+/_ReSharper.Caches/
+
+# NuGet packages (if not using PackageReference)
+packages/
+
+# VS/Mono auto-generated files
+.vs/
+*.pidb
+*.userprefs
+
+# Mac system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
+
+# Unity generated files (if applicable)
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+
+# Optional: ignore mod archive builds
+*.zip
+*.rar
+*.7z

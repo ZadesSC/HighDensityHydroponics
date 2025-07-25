@@ -1,0 +1,29 @@
+<Patch>
+<Operation Class="PatchOperationReplace">
+    <xpath>*/ThingDef[defName="Plant_Devilstrand"]/plant/sowTags</xpath>
+    <value>
+        <sowTags>
+			<li>Ground</li>
+			<li>Hydroponic</li>
+		</sowTags>
+    </value>
+</Operation>
+<Operation Class="PatchOperationReplace">
+    <xpath>*/ThingDef[defName="Plant_Corn"]/plant/sowTags</xpath>
+    <value>
+        <sowTags>
+			<li>Ground</li>
+			<li>Hydroponic</li>
+		</sowTags>
+    </value>
+</Operation>
+<Operation Class="PatchOperationReplace">
+    <xpath>*/ThingDef[defName="Plant_Haygrass"]/plant/sowTags</xpath>
+    <value>
+        <sowTags>
+			<li>Ground</li>
+			<li>Hydroponic</li>
+		</sowTags>
+    </value>
+</Operation>
+</Patch>

@@ -1,0 +1,162 @@
+<Defs>
+  <ThingDef Name="HDH_Hydroponics_base" ParentName="BuildingBase" Abstract="True">
+    <description>An artificial nutrient bath that allows very dense crop growths in grow bays underneath. The nutrient pumps must work continuously; the plants will die if power is cut. Includes its own internal light source, but the internal ventilation system is not temperature controlled.</description>
+    <thingClass>HighDensityHydro.Building_HighDensityHydro</thingClass>
+	<minifiedDef>MinifiedThing</minifiedDef>
+	<drawerType>MapMeshAndRealTime</drawerType>
+	<thingCategories>
+		<li>BuildingsProduction</li>
+	</thingCategories>
+    <castEdgeShadows>true</castEdgeShadows>
+    <altitudeLayer>FloorEmplacement</altitudeLayer>
+    <defaultPlacingRot>East</defaultPlacingRot>
+    <passability>PassThroughOnly</passability>
+    <pathCost>60</pathCost>
+    <constructEffect>ConstructMetal</constructEffect>
+    <fillPercent>0.30</fillPercent>
+    <canOverlapZones>false</canOverlapZones>
+    <constructionSkillPrerequisite>4</constructionSkillPrerequisite>
+    <statBases>
+      <WorkToBuild>2800</WorkToBuild>
+      <MaxHitPoints>180</MaxHitPoints>
+      <Flammability>0.5</Flammability>
+      <Cleanliness>-3</Cleanliness>
+	  <Mass>80</Mass>
+    </statBases>
+    <size>(1,4)</size>
+	<!-- this stat doesn't do anything for this mod -->
+    <fertility>2.8</fertility>
+    <building>
+      <defaultPlantToGrow>Plant_Rice</defaultPlantToGrow>
+      <sowTag>Hydroponic</sowTag>
+      <buildingTags>
+        <li>Production</li>
+      </buildingTags>
+    </building>
+    <tickerType>Rare</tickerType>
+    <terrainAffordanceNeeded>Heavy</terrainAffordanceNeeded>
+    <designationCategory>Production</designationCategory>
+  </ThingDef>
+  
+  <ThingDef ParentName="HDH_Hydroponics_base">
+    <defName>HDH_Hydroponics</defName>
+    <label>high-density hydroponics bay</label>
+	<graphicData>
+      <texPath>HDHBasins/HDHBasin</texPath>
+      <graphicClass>Graphic_Multi</graphicClass>
+      <drawSize>(2,4)</drawSize>
+      <damageData>
+        <cornerTL>Damage/Corner</cornerTL>
+        <cornerTR>Damage/Corner</cornerTR>
+        <cornerBL>Damage/Corner</cornerBL>
+        <cornerBR>Damage/Corner</cornerBR>
+      </damageData>
+    </graphicData>
+	<size>(2,4)</size>
+	<costList>
+      <Steel>180</Steel>
+	  <!-- <Plasteel>20</Plasteel> -->
+      <ComponentIndustrial>2</ComponentIndustrial>
+    </costList>
+	<comps>
+      <li Class="CompProperties_Forbiddable"/>
+      <li Class="CompProperties_Power">
+        <compClass>CompPowerTrader</compClass>
+        <basePowerConsumption>1400</basePowerConsumption>
+      </li>
+      <li Class="CompProperties_Flickable"/>
+    </comps>
+	<modExtensions>
+		<li Class="HighDensityHydro.HydroStatsExtension">
+			<fertility>2.8</fertility>
+			<capacity>80</capacity>
+		</li>
+	</modExtensions>
+    <researchPrerequisites>
+      <li>HDH_HighDensity</li>
+    </researchPrerequisites>
+  </ThingDef>
+  
+  <ThingDef ParentName="HDH_Hydroponics_base">
+    <defName>HDH_Hydroponics_Hyper</defName>
+    <label>hyper-density hydroponics bay</label>
+	<graphicData>
+      <texPath>HDHBasins/HDHBasinDr</texPath>
+      <graphicClass>Graphic_Multi</graphicClass>
+      <drawSize>(2,6)</drawSize>
+      <damageData>
+        <cornerTL>Damage/Corner</cornerTL>
+        <cornerTR>Damage/Corner</cornerTR>
+        <cornerBL>Damage/Corner</cornerBL>
+        <cornerBR>Damage/Corner</cornerBR>
+      </damageData>
+    </graphicData>
+	<size>(2,6)</size>
+    <constructionSkillPrerequisite>6</constructionSkillPrerequisite>
+    <statBases>
+      <WorkToBuild>3800</WorkToBuild>
+      <MaxHitPoints>180</MaxHitPoints>
+      <Flammability>0.5</Flammability>
+      <Cleanliness>-6</Cleanliness>
+    </statBases>
+    <costList>
+      <Steel>360</Steel>
+	  <Plasteel>20</Plasteel>
+      <ComponentSpacer>2</ComponentSpacer>
+    </costList>
+    <comps>
+      <li Class="CompProperties_Forbiddable"/>
+      <li Class="CompProperties_Power">
+        <compClass>CompPowerTrader</compClass>
+        <basePowerConsumption>2880</basePowerConsumption>
+      </li>
+      <li Class="CompProperties_Flickable"/>
+    </comps>
+	<modExtensions>
+		<li Class="HighDensityHydro.HydroStatsExtension">
+			<fertility>2.8</fertility>
+			<capacity>240</capacity>
+		</li>
+	</modExtensions>
+    <researchPrerequisites>
+      <li>HDH_HighDensity_Ultra</li>
+    </researchPrerequisites>
+  </ThingDef>
+  
+  <ThingDef ParentName="HDH_Hydroponics_base">
+    <defName>HDH_Hydroponics_mini</defName>
+    <label>mini hydroponics bay</label>
+	<graphicData>
+      <texPath>HDHBasins/HDHBasinBr</texPath>
+      <graphicClass>Graphic_Multi</graphicClass>
+      <drawSize>(1,4)</drawSize>
+      <damageData>
+        <cornerTL>Damage/Corner</cornerTL>
+        <cornerTR>Damage/Corner</cornerTR>
+        <cornerBL>Damage/Corner</cornerBL>
+        <cornerBR>Damage/Corner</cornerBR>
+      </damageData>
+    </graphicData>
+    <costList>
+      <Steel>80</Steel>
+      <ComponentIndustrial>1</ComponentIndustrial>
+    </costList>
+    <comps>
+      <li Class="CompProperties_Forbiddable"/>
+      <li Class="CompProperties_Power">
+        <compClass>CompPowerTrader</compClass>
+        <basePowerConsumption>425</basePowerConsumption>
+      </li>
+      <li Class="CompProperties_Flickable"/>
+    </comps>
+	<modExtensions>
+		<li Class="HighDensityHydro.HydroStatsExtension">
+			<fertility>2.8</fertility>
+			<capacity>16</capacity>
+		</li>
+	</modExtensions>
+	<researchPrerequisites>
+      <li>Electricity</li>
+    </researchPrerequisites>
+  </ThingDef>
+</Defs>
