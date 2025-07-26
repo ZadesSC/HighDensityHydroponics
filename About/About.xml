@@ -6,8 +6,6 @@
     <supportedVersions>
 		<li>1.6</li>
     </supportedVersions>
-	<loadAfter> 
-	</loadAfter>
 	<packageId>MapleApple.HighDensityHydroponics.Fixed.ZouHb.zades</packageId>
 	<description>Updated to 1.6 and rewrote a decent chunk of how it worked.</description>
 	<loadAfter>

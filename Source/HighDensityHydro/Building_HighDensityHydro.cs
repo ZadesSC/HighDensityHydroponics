@@ -11,6 +11,10 @@ namespace HighDensityHydro
 {
 	public class Building_HighDensityHydro : Building_PlantGrower, IPlantToGrowSettable
 	{
+		// for graphics drawing
+		private static readonly Dictionary<ThingDef, Graphic> plantGraphicCache = new Dictionary<ThingDef, Graphic>();
+		private Dictionary<IntVec3, Matrix4x4> drawMatrixCache = new Dictionary<IntVec3, Matrix4x4>();
+		
 		// Token: 0x17000001 RID: 1
 		// (get) Token: 0x06000001 RID: 1
 		IEnumerable<IntVec3> IPlantToGrowSettable.Cells
@@ -27,10 +31,14 @@ namespace HighDensityHydro
 			//Log.Message($"[HDH] Tick: storedPlants={storedPlants}, growth={growth}, stage={bayStage}");
 			
 			bool poweredNow = this.PowerComp == null || this.PowerComp.PowerOn;
-			if (this.wasPoweredLastTick && !poweredNow)
+			if (HDH_Mod.settings.killPlantsOnNoPower)
 			{
-				this.KillAllPlantsAndReset();
+				if (this.wasPoweredLastTick && !poweredNow)
+				{
+					this.KillAllPlantsAndReset();
+				}
 			}
+			
 			this.wasPoweredLastTick = poweredNow;
 			switch (this.bayStage)
 			{
@@ -57,7 +65,7 @@ namespace HighDensityHydro
 			{
 				text += "\n" + currentPlantDefToGrow.LabelCap + " | " + string.Format("{0:#0}%", this.growth * 100f);
 				//text += "\nGrowth: " + string.Format("{0:#0}%", this.growth * 100f);
-				if (this.avgGlow >= 0f)
+				if (HDH_Mod.settings.lightRequirement && this.avgGlow >= 0f)
 				{
 					text = text + "\nAverage light: " + string.Format("{0:0}%", this.avgGlow * 100f);
 				}
@@ -79,6 +87,8 @@ namespace HighDensityHydro
 			float y = (x == 1) ? 0.6f : 0.1f;
 			this.margin = ((x == 1) ? 0.15f : 0.08f);
 			this.barsize = new Vector2((float)this.def.size.z - 0.4f, y);
+
+			drawMatrixCache.Clear();
 		}
 
 		// Token: 0x0600000E RID: 14
@@ -111,21 +121,61 @@ namespace HighDensityHydro
 		// Token: 0x060000ED RID: 237
 		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
-			base.DrawAt(drawLoc, flip);
-			if (this.storedPlants > 0 && this.bayStage == Building_HighDensityHydro.BayStage.Growing)
-			{
-				GenDraw.FillableBarRequest r = default(GenDraw.FillableBarRequest);
-				r.center = drawLoc + Vector3.up * 0.1f;
-				r.size = this.barsize;
-				r.fillPercent = this.growth;
-				r.filledMat = HDH_Graphics.HDHBarFilledMat;
-				r.unfilledMat = HDH_Graphics.HDHBarUnfilledMat;
-				r.margin = this.margin;
-				Rot4 rotation = base.Rotation;
-				rotation.Rotate(RotationDirection.Clockwise);
-				r.rotation = rotation;
-				GenDraw.DrawFillableBar(r);
-			}
+		    base.DrawAt(drawLoc, flip);
+
+		    // Draw growth bar during Growing stage
+		    if (this.storedPlants > 0 && this.bayStage == BayStage.Growing)
+		    {
+		        GenDraw.FillableBarRequest barReq = new GenDraw.FillableBarRequest
+		        {
+		            center = drawLoc + Vector3.up * 0.1f,
+		            size = this.barsize,
+		            fillPercent = this.growth,
+		            filledMat = HDH_Graphics.HDHBarFilledMat,
+		            unfilledMat = HDH_Graphics.HDHBarUnfilledMat,
+		            margin = this.margin,
+		            rotation = this.Rotation.Rotated(RotationDirection.Clockwise)
+		        };
+		        GenDraw.DrawFillableBar(barReq);
+		    }
+
+		    if (this.currentPlantDefToGrow == null || this.storedPlants <= 0)
+		        return;
+
+		    // Cache the graphic
+		    Graphic graphic;
+		    if (!plantGraphicCache.TryGetValue(this.currentPlantDefToGrow, out graphic))
+		    {
+		        graphic = this.currentPlantDefToGrow.graphicData.Graphic;
+		        plantGraphicCache[this.currentPlantDefToGrow] = graphic;
+		    }
+
+		    // Stable non-wind material
+		    Material mat = new Material(graphic.MatSingle);
+		    mat.shader = ShaderDatabase.Cutout;
+
+		    // Use in-game ticks
+		    int ticks = Find.TickManager.TicksGame;
+		    float swayAmplitude = 0.005f;
+		    float swaySpeed = 0.1f; // radians per tick (adjust to taste)
+		    float scale = Mathf.Lerp(0.2f, 1.0f, this.growth);
+
+		    foreach (IntVec3 cell in this.OccupiedRect().Cells)
+		    {
+		        float phaseOffset = (cell.x * 17 + cell.z * 31) % 100 / 100f;
+		        float swayOffset = Mathf.Sin(ticks * swaySpeed + phaseOffset * Mathf.PI * 2f) * swayAmplitude;
+
+		        Vector3 cellDrawPos = cell.ToVector3ShiftedWithAltitude(AltitudeLayer.BuildingOnTop);
+		        cellDrawPos.x += swayOffset;
+
+		        Matrix4x4 matrix = Matrix4x4.TRS(
+		            cellDrawPos,
+		            Quaternion.identity,
+		            new Vector3(scale, 1f, scale)
+		        );
+
+		        Graphics.DrawMesh(MeshPool.plane10, matrix, mat, 0);
+		    }
 		}
 
 		// Token: 0x0600012D RID: 301
@@ -213,25 +263,35 @@ namespace HighDensityHydro
 				this.avgGlow = -1f;
 				return;
 			}
-			float minGlow = plantDef.plant.growMinGlow;
-			float optimalGlow = plantDef.plant.growOptimalGlow;
-			float totalGlow = 0f;
-			int cellCount = 0;
-			foreach (IntVec3 cell in this.OccupiedRect().Cells)
-			{
-				totalGlow += base.Map.glowGrid.GroundGlowAt(cell, false, false);
-				cellCount++;
-			}
-			this.avgGlow = ((cellCount > 0) ? (totalGlow / (float)cellCount) : 1f);
+			
 			float growthRate = 0f;
-			if (this.avgGlow >= minGlow)
+			if (HDH_Mod.settings.lightRequirement)
 			{
-				growthRate = Mathf.Clamp01((this.avgGlow - minGlow) / (optimalGlow - minGlow));
+				float minGlow = plantDef.plant.growMinGlow;
+				float optimalGlow = plantDef.plant.growOptimalGlow;
+				float totalGlow = 0f;
+				int cellCount = 0;
+				foreach (IntVec3 cell in this.OccupiedRect().Cells)
+				{
+					totalGlow += base.Map.glowGrid.GroundGlowAt(cell, false, false);
+					cellCount++;
+				}
+				this.avgGlow = ((cellCount > 0) ? (totalGlow / (float)cellCount) : 1f);
+				if (this.avgGlow >= minGlow)
+				{
+					growthRate = Mathf.Clamp01((this.avgGlow - minGlow) / (optimalGlow - minGlow));
+				}
+			
+				if (growthRate <= 0f)
+				{
+					return;
+				}
 			}
-			if (growthRate <= 0f)
+			else
 			{
-				return;
+				growthRate = 1f;
 			}
+			
 			float growthPerTick = 1f / (60000f * this.growDays()) * 250f;
 			this.growth += this.fertility * growthRate * growthPerTick;
 			this.growth = Mathf.Clamp01(this.growth);
@@ -299,6 +359,7 @@ namespace HighDensityHydro
 		{
 			//this.KillAllPlantsAndReset();
 			base.DeSpawn(mode);
+			drawMatrixCache.Clear();
 		}
 
 		// Token: 0x0600015B RID: 347

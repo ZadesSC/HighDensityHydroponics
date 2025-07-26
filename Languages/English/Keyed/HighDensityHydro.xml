@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+    <!-- Mod setting values -->
+    <!-- Labels -->
+    <HDH_LightRequirementLabel>Light requirement</HDH_LightRequirementLabel>
+    <HDH_KillOnPowerLossLabel>Kill plants if no power</HDH_KillOnPowerLossLabel>
+
+    <!-- Tooltips -->
+    <HDH_LightRequirementTooltip>Enabling this will require light for plant growth in HDH hydroponics. Light thresholds depend on plant type.</HDH_LightRequirementTooltip>
+    <HDH_KillOnPowerLossTooltip>If enabled, plants will be killed when power is lost.</HDH_KillOnPowerLossTooltip>
+</LanguageData>

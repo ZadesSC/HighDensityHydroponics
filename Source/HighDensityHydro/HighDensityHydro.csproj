@@ -59,6 +59,7 @@
         <Compile Include="DBHHydroPatch.cs" />
         <Compile Include="HDDefOf.cs" />
         <Compile Include="HDH_Graphics.cs" />
+        <Compile Include="HDH_Mod.cs" />
         <Compile Include="HydroStatsExtension.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
     </ItemGroup>
