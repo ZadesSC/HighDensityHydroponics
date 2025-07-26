@@ -31,7 +31,7 @@ namespace HighDensityHydro
                     return;
 
                 var dbhAssembly = dbhMod.assemblies.loadedAssemblies
-                    .FirstOrDefault(a => a.GetName().Name.ToLower().Contains("badhygiene"));
+                    .FirstOrDefault(a => a.GetName().Name.IndexOf("badhygiene", StringComparison.OrdinalIgnoreCase) >= 0);
                 if (dbhAssembly == null)
                     return;
                 
