@@ -9,7 +9,6 @@ using Verse.Sound;
 
 namespace HighDensityHydro
 {
-	// Token: 0x02000002 RID: 2
 	public class Building_HighDensityHydro : Building_PlantGrower, IPlantToGrowSettable
 	{
 		// Token: 0x17000001 RID: 1
@@ -159,7 +158,7 @@ namespace HighDensityHydro
 			if (this.storedPlants >= this.capacity)
 			{
 				this.storedPlants = this.capacity;
-				foreach (Plant plant2 in base.lantsOnMe.ToList<Plant>())
+				foreach (Plant plant2 in base.PlantsOnMe.ToList<Plant>())
 				{
 					plant2.DeSpawn(DestroyMode.Vanish);
 				}
@@ -305,6 +304,16 @@ namespace HighDensityHydro
 			{
 				plant.Destroy(DestroyMode.Vanish);
 			}
+		}
+
+		public int GetHDHCapacity()
+		{
+			return capacity;
+		}
+
+		public int GetNumStoredPlants()
+		{
+			return storedPlants;
 		}
 
 		// Token: 0x040000C8 RID: 200
