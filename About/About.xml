@@ -10,4 +10,16 @@
 	</loadAfter>
 	<packageId>MapleApple.HighDensityHydroponics.Fixed.ZouHb.zades</packageId>
 	<description>Updated to 1.6 and rewrote a decent chunk of how it worked.</description>
+	<loadAfter>
+		<li>brrainz.harmony</li>
+		<li>dubwise.dubsbadhygiene</li>
+	</loadAfter>
+
+	<modDependencies>
+		<li>
+			<packageId>brrainz.harmony</packageId>
+			<displayName>Harmony</displayName>
+			<steamWorkshopUrl>https://steamcommunity.com/sharedfiles/filedetails/?id=2009463077</steamWorkshopUrl>
+		</li>
+	</modDependencies>
 </modMetaData>
