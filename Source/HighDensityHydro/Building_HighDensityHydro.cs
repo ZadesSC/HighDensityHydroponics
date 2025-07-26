@@ -117,12 +117,12 @@ namespace HighDensityHydro
 		{
 			return base.CanAcceptSowNow() && this.bayStage == Building_HighDensityHydro.BayStage.Sowing && this.storedPlants < this.capacity;
 		}
-
+		
 		// Token: 0x060000ED RID: 237
 		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
 		    base.DrawAt(drawLoc, flip);
-
+			
 		    // Draw growth bar during Growing stage
 		    if (this.storedPlants > 0 && this.bayStage == BayStage.Growing)
 		    {
@@ -158,23 +158,44 @@ namespace HighDensityHydro
 		    int ticks = Find.TickManager.TicksGame;
 		    float swayAmplitude = 0.005f;
 		    float swaySpeed = 0.1f; // radians per tick (adjust to taste)
-		    float scale = Mathf.Lerp(0.2f, 1.0f, this.growth);
+		    //float scale = Mathf.Lerp(0.2f, 1.0f, this.growth);
 
-		    foreach (IntVec3 cell in this.OccupiedRect().Cells)
+		    List<IntVec3> cells = this.OccupiedRect().Cells.ToList();
+		    int cellCount = cells.Count;
+
+		    int visibleCount = 0;
+		    if (this.bayStage == BayStage.Growing)
 		    {
-		        float phaseOffset = (cell.x * 17 + cell.z * 31) % 100 / 100f;
-		        float swayOffset = Mathf.Sin(ticks * swaySpeed + phaseOffset * Mathf.PI * 2f) * swayAmplitude;
+			    visibleCount = cellCount;
+		    }
+		    else if (this.bayStage == BayStage.Sowing && this.storedPlants > 0)
+		    {
+			    visibleCount = Mathf.Clamp(Mathf.FloorToInt((this.storedPlants / (float)this.capacity) * cellCount), 1, cellCount);
+		    }
+		    else if (this.bayStage == BayStage.Harvest)
+		    {
+			    visibleCount = 0;
+		    }
 
-		        Vector3 cellDrawPos = cell.ToVector3ShiftedWithAltitude(AltitudeLayer.BuildingOnTop);
-		        cellDrawPos.x += swayOffset;
+		    for (int i = 0; i < visibleCount; i++)
+		    {
+			    IntVec3 cell = cells[i];
 
-		        Matrix4x4 matrix = Matrix4x4.TRS(
-		            cellDrawPos,
-		            Quaternion.identity,
-		            new Vector3(scale, 1f, scale)
-		        );
+			    float phaseOffset = (cell.x * 17 + cell.z * 31) % 100 / 100f;
+			    float swayOffset = Mathf.Sin(ticks * swaySpeed + phaseOffset * Mathf.PI * 2f) * swayAmplitude;
 
-		        Graphics.DrawMesh(MeshPool.plane10, matrix, mat, 0);
+			    Vector3 cellDrawPos = cell.ToVector3ShiftedWithAltitude(AltitudeLayer.BuildingOnTop);
+			    cellDrawPos.x += swayOffset;
+
+			    float scale = Mathf.Lerp(0.2f, 1.0f, this.growth);
+
+			    Matrix4x4 matrix = Matrix4x4.TRS(
+				    cellDrawPos,
+				    Quaternion.identity,
+				    new Vector3(scale, 1f, scale)
+			    );
+
+			    Graphics.DrawMesh(MeshPool.plane10, matrix, mat, 0);
 		    }
 		}
 

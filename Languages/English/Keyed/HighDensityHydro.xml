@@ -4,8 +4,10 @@
     <!-- Labels -->
     <HDH_LightRequirementLabel>Light requirement</HDH_LightRequirementLabel>
     <HDH_KillOnPowerLossLabel>Kill plants if no power</HDH_KillOnPowerLossLabel>
-
+    <HDH_AllowOtherVanillaPlantsLabel>Allow other vanilla plants</HDH_AllowOtherVanillaPlantsLabel>
+    
     <!-- Tooltips -->
     <HDH_LightRequirementTooltip>Enabling this will require light for plant growth in HDH hydroponics. Light thresholds depend on plant type.</HDH_LightRequirementTooltip>
-    <HDH_KillOnPowerLossTooltip>If enabled, plants will be killed when power is lost.</HDH_KillOnPowerLossTooltip>
+    <HDH_KillOnPowerLossTooltip>Enabling this will kill all plants in the hydroponics if power is lost.</HDH_KillOnPowerLossTooltip>
+    <HDH_AllowOtherVanillaPlantsTooltip>Allow some other vanilla plants like corn, hay, and devilstrand to be able to grow in these hydroponics.</HDH_AllowOtherVanillaPlantsTooltip>
 </LanguageData>

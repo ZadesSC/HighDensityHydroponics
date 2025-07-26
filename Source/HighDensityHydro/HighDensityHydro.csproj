@@ -56,6 +56,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Building_HighDensityHydro.cs" />
+        <Compile Include="Patch_Command_SetPlantToGrow.cs" />
         <Compile Include="DBHHydroPatch.cs" />
         <Compile Include="HDDefOf.cs" />
         <Compile Include="HDH_Graphics.cs" />
