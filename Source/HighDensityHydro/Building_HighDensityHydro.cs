@@ -24,6 +24,8 @@ namespace HighDensityHydro
 		// Token: 0x06000002 RID: 2
 		public override void TickRare()
 		{
+			//Log.Message($"[HDH] Tick: storedPlants={storedPlants}, growth={growth}, stage={bayStage}");
+			
 			bool poweredNow = this.PowerComp == null || this.PowerComp.PowerOn;
 			if (this.wasPoweredLastTick && !poweredNow)
 			{
@@ -53,8 +55,8 @@ namespace HighDensityHydro
 			text = text + "\nStored Plants: " + this.storedPlants;
 			if (this.storedPlants > 0)
 			{
-				text += "\nPlant: " + currentPlantDefToGrow.LabelCap;
-				text += "\nGrowth: " + string.Format("{0:#0}%", this.growth * 100f);
+				text += "\n" + currentPlantDefToGrow.LabelCap + " | " + string.Format("{0:#0}%", this.growth * 100f);
+				//text += "\nGrowth: " + string.Format("{0:#0}%", this.growth * 100f);
 				if (this.avgGlow >= 0f)
 				{
 					text = text + "\nAverage light: " + string.Format("{0:0}%", this.avgGlow * 100f);
@@ -87,6 +89,11 @@ namespace HighDensityHydro
 			Scribe_Values.Look<int>(ref this.storedPlants, "storedPlants", 0, false);
 			Scribe_Values.Look<float>(ref this.growth, "growth", 0f, false);
 			Scribe_Defs.Look(ref currentPlantDefToGrow, "queuedPlantDefToGrow");
+			
+			// if (Scribe.mode == LoadSaveMode.LoadingVars)
+			// {
+			// 	Log.Warning($"[HDH] Loading hydro: storedPlants={storedPlants}, growth={growth}, stage={bayStage}");
+			// }
 		}
 
 		// Token: 0x06000012 RID: 18
@@ -290,7 +297,7 @@ namespace HighDensityHydro
 		// Token: 0x06000142 RID: 322
 		public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
 		{
-			this.KillAllPlantsAndReset();
+			//this.KillAllPlantsAndReset();
 			base.DeSpawn(mode);
 		}
 
