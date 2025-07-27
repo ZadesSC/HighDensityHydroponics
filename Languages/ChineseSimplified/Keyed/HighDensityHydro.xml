@@ -10,5 +10,10 @@
     <HDH_LightRequirementTooltip>启用后，HDH水培种植需要光照。光照阈值取决于植物类型。</HDH_LightRequirementTooltip>
     <HDH_KillOnPowerLossTooltip>启用后，断电时水培槽内所有植物会死亡。</HDH_KillOnPowerLossTooltip>
     <HDH_AllowOtherVanillaPlantsTooltip>允许玉米、干草、恶魔丝等部分原版植物在水培槽中生长。</HDH_AllowOtherVanillaPlantsTooltip>
+
+    <!-- Hydroponics inspect pane values -->
+    <HDH_NumStoredPlants>储存植物: {0}</HDH_NumStoredPlants>
+    <HDH_AverageLight>平均光照: {0}</HDH_AverageLight>
+    
 </LanguageData>
 

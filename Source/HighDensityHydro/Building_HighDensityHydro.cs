@@ -60,16 +60,21 @@ namespace HighDensityHydro
 		public override string GetInspectString()
 		{
 			string text = base.GetInspectString();
-			text = text + "\nStored Plants: " + this.storedPlants;
+
+			text += "\n" + "HDH_NumStoredPlants".Translate(this.storedPlants);
+
 			if (this.storedPlants > 0)
 			{
-				text += "\n" + currentPlantDefToGrow.LabelCap + " | " + string.Format("{0:#0}%", this.growth * 100f);
-				//text += "\nGrowth: " + string.Format("{0:#0}%", this.growth * 100f);
+				// "{PlantLabel} | {GrowthPercent}%"
+				text += "\n" + currentPlantDefToGrow.LabelCap + ": " + string.Format("{0:#0}%", this.growth * 100f);
+
 				if (HDH_Mod.settings.lightRequirement && this.avgGlow >= 0f)
 				{
-					text = text + "\nAverage light: " + string.Format("{0:0}%", this.avgGlow * 100f);
+					// "Average Light: {0}%"
+					text += "\n" + "HDH_AverageLight".Translate(string.Format("{0:0}%", this.avgGlow * 100f));
 				}
 			}
+
 			return text;
 		}
 
