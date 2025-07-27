@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+    <!-- 高密度水培槽 -->
+    <HDH_Hydroponics.label>高密度水培槽</HDH_Hydroponics.label>
+    <HDH_Hydroponics.description>一種人工營養浴，可在下方種植區實現極高密度的作物生長。營養泵需持續工作，斷電時植物會死亡。自帶光源，但通風系統不控溫。</HDH_Hydroponics.description>
+
+    <!-- 超高密度水培槽 -->
+    <HDH_Hydroponics_Hyper.label>超高密度水培槽</HDH_Hydroponics_Hyper.label>
+    <HDH_Hydroponics_Hyper.description>一種人工營養浴，可在下方種植區實現極高密度的作物生長。營養泵需持續工作，斷電時植物會死亡。自帶光源，但通風系統不控溫。</HDH_Hydroponics_Hyper.description>
+
+    <!-- 迷你水培槽 -->
+    <HDH_Hydroponics_mini.label>迷你水培槽</HDH_Hydroponics_mini.label>
+    <HDH_Hydroponics_mini.description>一種人工營養浴，可在下方種植區實現極高密度的作物生長。營養泵需持續工作，斷電時植物會死亡。自帶光源，但通風系統不控溫。</HDH_Hydroponics_mini.description>
+</LanguageData>

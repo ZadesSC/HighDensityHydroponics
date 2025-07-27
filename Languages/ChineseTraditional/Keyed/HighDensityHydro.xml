@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+    <!-- Mod setting values -->
+    <!-- Labels -->
+    <HDH_LightRequirementLabel>光照需求</HDH_LightRequirementLabel>
+    <HDH_KillOnPowerLossLabel>斷電時殺死植物</HDH_KillOnPowerLossLabel>
+    <HDH_AllowOtherVanillaPlantsLabel>允許其他原版植物</HDH_AllowOtherVanillaPlantsLabel>
+    
+    <!-- Tooltips -->
+    <HDH_LightRequirementTooltip>啟用後，HDH水培種植需要光照。光照閾值取決於植物類型。</HDH_LightRequirementTooltip>
+    <HDH_KillOnPowerLossTooltip>啟用後，斷電時水培槽內所有植物會死亡。</HDH_KillOnPowerLossTooltip>
+    <HDH_AllowOtherVanillaPlantsTooltip>允許玉米、乾草、惡魔絲等部分原版植物在水培槽中生長。</HDH_AllowOtherVanillaPlantsTooltip>
+</LanguageData>
+

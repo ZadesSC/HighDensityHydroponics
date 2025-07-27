@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<LanguageData>
+    <!-- 高密度水培技術 -->
+    <HDH_HighDensity.label>高密度水培技術</HDH_HighDensity.label>
+    <HDH_HighDensity.description>在人工迷你生物群落中提高植物生長密度的技術。</HDH_HighDensity.description>
+
+    <!-- 超高密度水培技術 -->
+    <HDH_HighDensity_Ultra.label>超高密度水培技術</HDH_HighDensity_Ultra.label>
+    <HDH_HighDensity_Ultra.description>進一步提高人工迷你生物群落中植物生長密度的技術。</HDH_HighDensity_Ultra.description>
+</LanguageData>
