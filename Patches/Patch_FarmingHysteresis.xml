@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Patch>
+
+    <Operation Class="PatchOperationFindMod">
+        <mods>
+            <li>Farming Hysteresis</li>
+        </mods>
+
+        <match Class="PatchOperationSequence">
+            <operations>
+
+                <!-- Ensure inspectorTabs node exists on the abstract base -->
+                <li Class="PatchOperationAdd">
+                    <xpath>Defs/ThingDef[@Name="HDH_Hydroponics_base"][not(inspectorTabs)]</xpath>
+                    <value>
+                        <inspectorTabs />
+                    </value>
+                </li>
+
+                <!-- Add ITab_Hysteresis to the base -->
+                <li Class="PatchOperationAdd">
+                    <xpath>Defs/ThingDef[@Name="HDH_Hydroponics_base"]/inspectorTabs</xpath>
+                    <value>
+                        <li>FarmingHysteresis.ITabs.ITab_Hysteresis</li>
+                    </value>
+                </li>
+
+            </operations>
+        </match>
+    </Operation>
+
+</Patch>

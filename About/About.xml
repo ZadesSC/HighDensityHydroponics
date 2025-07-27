@@ -11,6 +11,7 @@
 	<loadAfter>
 		<li>brrainz.harmony</li>
 		<li>dubwise.dubsbadhygiene</li>
+		<li>ilyvion.farminghysteresis</li>
 	</loadAfter>
 
 	<modDependencies>
