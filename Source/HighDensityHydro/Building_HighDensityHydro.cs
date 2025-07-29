@@ -12,129 +12,229 @@ namespace HighDensityHydro
 	public class Building_HighDensityHydro : Building_PlantGrower, IPlantToGrowSettable
 	{
 		// for graphics drawing
-		private static readonly Dictionary<ThingDef, Graphic> plantGraphicCache = new Dictionary<ThingDef, Graphic>();
-		private Dictionary<IntVec3, Matrix4x4> drawMatrixCache = new Dictionary<IntVec3, Matrix4x4>();
+		private Dictionary<IntVec3, Matrix4x4> _drawMatrixCache = new Dictionary<IntVec3, Matrix4x4>();
+		private Vector2 _barsize;
+		private float _margin;
 		
-		// Token: 0x17000001 RID: 1
-		// (get) Token: 0x06000001 RID: 1
-		IEnumerable<IntVec3> IPlantToGrowSettable.Cells
+		// hydroponic bay stages
+		private enum BayStage
 		{
-			get
-			{
-				return this.OccupiedRect().Cells;
-			}
+			Sowing,
+			Growing,
+			Harvest
 		}
+		
+		// hydroponic stuff
+		private int _tickCounter = 0;
+		IEnumerable<IntVec3> IPlantToGrowSettable.Cells => this.OccupiedRect().Cells;
+		private Building_HighDensityHydro.BayStage _bayStage;
+		private CompPowerTrader _powerCompCached;
+		private bool _wasPoweredLastTick = true;
 
-		// Token: 0x06000002 RID: 2
-		public override void TickRare()
-		{
-			//Log.Message($"[HDH] Tick: storedPlants={storedPlants}, growth={growth}, stage={bayStage}");
-			
-			bool poweredNow = this.PowerComp == null || this.PowerComp.PowerOn;
-			if (HDH_Mod.settings.killPlantsOnNoPower)
-			{
-				if (this.wasPoweredLastTick && !poweredNow)
-				{
-					this.KillAllPlantsAndReset();
-				}
-			}
-			
-			this.wasPoweredLastTick = poweredNow;
-			switch (this.bayStage)
-			{
-			case Building_HighDensityHydro.BayStage.Sowing:
-				this.HandleSowing();
-				return;
-			case Building_HighDensityHydro.BayStage.Growing:
-				this.HandleGrowing();
-				return;
-			case Building_HighDensityHydro.BayStage.Harvest:
-				this.HandleHarvest();
-				return;
-			default:
-				return;
-			}
-		}
-
-		// Token: 0x06000004 RID: 4
-		public override string GetInspectString()
-		{
-			string text = base.GetInspectString();
-
-			text += "\n" + "HDH_NumStoredPlants".Translate(this.storedPlants);
-
-			if (this.storedPlants > 0)
-			{
-				// "{PlantLabel} | {GrowthPercent}%"
-				text += "\n" + currentPlantDefToGrow.LabelCap + ": " + string.Format("{0:#0}%", this.growth * 100f);
-
-				if (HDH_Mod.settings.lightRequirement && this.avgGlow >= 0f)
-				{
-					// "Average Light: {0}%"
-					text += "\n" + "HDH_AverageLight".Translate(string.Format("{0:0}%", this.avgGlow * 100f));
-				}
-			}
-
-			return text;
-		}
-
-		// Token: 0x06000007 RID: 7
+		// plant stuff
+		private ThingDef _currentPlantDefToGrow = null;
+		private int _plantAge = 0;
+		private int _plantCapacity;
+		private int _numStoredPlants = 0;
+		private int _numStoredPlantsBuffer = 0; // buffer used for multi-harvestable plants
+		private float _fertility = 2.8f;
+		private float _curGrowth = 0;
+		private float _avgGlow;
+		private float _averageHarvestGrowth = 0f; // this keeps track of average growth of plants that can be harvested multiple times
+		
 		public Building_HighDensityHydro()
 		{
 		}
-
-		// Token: 0x06000009 RID: 9
+		
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
-			this.LoadConfig();
-			int x = this.def.size.x;
+			LoadConfig();
+			
+			int x = def.size.x;
 			float y = (x == 1) ? 0.6f : 0.1f;
 			y = 0.1f;
-			this.margin = ((x == 1) ? 0.15f : 0.08f);
-			this.margin = 0.05f;
-			this.barsize = new Vector2((float)this.def.size.z - 0.4f, y);
+			_margin = ((x == 1) ? 0.15f : 0.08f);
+			_margin = 0.05f;
+			_barsize = new Vector2(def.size.z - 0.4f, y);
 
-			drawMatrixCache.Clear();
+			_drawMatrixCache.Clear();
 			
 			//TODO: maybe move this somewhere else, should only be called and generated once
 			PlantPosIndices();
 		}
-
-		// Token: 0x0600000E RID: 14
+		
+		private void LoadConfig()
+		{
+			HydroStatsExtension modExt = def.GetModExtension<HydroStatsExtension>();
+			if (modExt != null)
+			{
+				_plantCapacity = modExt.capacity;
+				_fertility = modExt.fertility;
+			}
+		}
+		
 		public override void ExposeData()
 		{
 			base.ExposeData();
-			Scribe_Values.Look<Building_HighDensityHydro.BayStage>(ref this.bayStage, "bayStage", Building_HighDensityHydro.BayStage.Sowing, false);
-			Scribe_Values.Look<int>(ref this.storedPlants, "storedPlants", 0, false);
-			Scribe_Values.Look<float>(ref this.growth, "growth", 0f, false);
-			Scribe_Defs.Look(ref currentPlantDefToGrow, "queuedPlantDefToGrow");
+			Scribe_Values.Look<int>(ref this._tickCounter, "storedPlants", 0, false);
+			Scribe_Values.Look<Building_HighDensityHydro.BayStage>(ref this._bayStage, "bayStage", Building_HighDensityHydro.BayStage.Sowing, false);
+			Scribe_Values.Look<int>(ref this._numStoredPlants, "storedPlants", 0, false);
+			Scribe_Values.Look<int>(ref this._numStoredPlantsBuffer, "storedPlantsBuffer", 0, false);
+			Scribe_Values.Look<int>(ref this._plantAge, "plantAge", 0, false);
+			Scribe_Values.Look<float>(ref this._curGrowth, "growth", 0f, false);
+			Scribe_Values.Look<float>(ref this._averageHarvestGrowth, "averageHarvestGrowth", 0f, false);
+			Scribe_Defs.Look(ref _currentPlantDefToGrow, "queuedPlantDefToGrow");
 			
 			// if (Scribe.mode == LoadSaveMode.LoadingVars)
 			// {
 			// 	Log.Warning($"[HDH] Loading hydro: storedPlants={storedPlants}, growth={growth}, stage={bayStage}");
 			// }
 		}
+		
+		public override string GetInspectString()
+		{
+			string text = base.GetInspectString();
 
-		// Token: 0x06000012 RID: 18
+			text += "\n" + "HDH_NumStoredPlants".Translate(_numStoredPlants + _numStoredPlantsBuffer);
+
+			if (this._numStoredPlants > 0)
+			{
+				// "{PlantLabel}: {GrowthPercent}%"
+				text += "\n" + _currentPlantDefToGrow.LabelCap + ": " + string.Format("{0:#0}%", this._curGrowth * 100f);
+
+				if (HDH_Mod.settings.lightRequirement && this._avgGlow >= 0f)
+				{
+					// "Average Light: {0}%"
+					text += "\n" + "HDH_AverageLight".Translate(string.Format("{0:0}%", this._avgGlow * 100f));
+				}
+			}
+
+			// if (Prefs.DevMode)
+			// {
+			// 	text += "\nPlant Age: " + _plantAge + "(" + ((float)_plantAge / 60000) + ")";
+			// 	text += "\nBay Stage: " + _bayStage;
+			// 	text += "\nCurrent PlantDef: " + (_currentPlantDefToGrow?.defName ?? "null");
+			// 	text += "\nFertility: " + _fertility.ToString("P0");
+			// 	text += "\nAvgGlow (raw): " + _avgGlow.ToString("F2");
+			// }
+
+			return text;
+		}
+		
+		// Add dev gizmos
+		public override IEnumerable<Gizmo> GetGizmos()
+		{
+			foreach (var g in base.GetGizmos())
+				yield return g;
+
+			if (DebugSettings.ShowDevGizmos)
+			{
+				yield return new Command_Action
+				{
+					defaultLabel = "Dev: Increase Growth by 10%",
+					action = delegate()
+					{
+						_curGrowth += 0.1f;
+						_numStoredPlants = _plantCapacity;
+					}
+				};
+				
+				yield return new Command_Action
+				{
+					defaultLabel = "Dev: Set Growth to 100%",
+					action = delegate()
+					{
+						_curGrowth = 1f;
+						_numStoredPlants = _plantCapacity;
+					}
+				};
+
+				yield return new Command_Action
+				{
+					defaultLabel = "Dev: Increase Age by 1 day",
+					action = delegate()
+					{
+						_plantAge += 60000;
+					}
+				};
+			}
+		}
+
+		// Tick rare should only handle sowing and harvesting stage to make it feel more responsible, should tick every
+		// ~4.1s at speed 1 (60tps)
+		public override void TickRare()
+		{
+			_tickCounter += 250;
+			//Log.Message($"[HDH] Tick: storedPlants={storedPlants}, growth={growth}, stage={bayStage}");
+			
+			//TODO: check if we need to call this
+			//base.TickRare();
+			
+			bool poweredNow = this.PowerComp == null || this.PowerComp.PowerOn;
+			if (HDH_Mod.settings.killPlantsOnNoPower)
+			{
+				if (this._wasPoweredLastTick && !poweredNow)
+				{
+					this.KillAllPlantsAndReset();
+				}
+			}
+			this._wasPoweredLastTick = poweredNow;
+			
+			switch (_bayStage)
+			{
+			case BayStage.Sowing:
+				HandleSowing();
+				return;
+			case BayStage.Harvest:
+				HandleHarvest();
+				return;
+			case BayStage.Growing:
+				break;
+			default:
+				return;
+			}
+
+			if (_tickCounter >= 2000)
+			{
+				_tickCounter = 0;
+				TickLong();
+			}
+		}
+		
+		// TickLong will simulate plant growth and other plant related data since vanilla also does this in tick long
+		public override void TickLong()
+		{
+			//TODO: check if we need to call this
+			//base.TickLong();
+			
+			switch (_bayStage)
+			{
+				case BayStage.Growing:
+					HandleGrowing();
+					return;
+				case BayStage.Sowing:
+				case BayStage.Harvest:
+				default:
+					return;
+			}
+		}
 		public new void SetPlantDefToGrow(ThingDef plantDef)
 		{
 			base.SetPlantDefToGrow(plantDef);
 		}
-
-		// Token: 0x060000DE RID: 222
 		public new bool CanAcceptSowNow()
 		{
-			return base.CanAcceptSowNow() && this.bayStage == Building_HighDensityHydro.BayStage.Sowing && this.storedPlants < this.capacity;
+			return base.CanAcceptSowNow() && _bayStage == BayStage.Sowing && _numStoredPlants < _plantCapacity;
 		}
 		
-		// Token: 0x060000ED RID: 237
+		// used to draw progress bar
 		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
 		    base.DrawAt(drawLoc, flip);
 			
 		    //Draw growth bar during Growing stage
-		    if (this.storedPlants > 0 && this.bayStage == BayStage.Growing)
+		    if (this._numStoredPlants > 0 && this._bayStage == BayStage.Growing)
 		    {
 			    Vector3 center;
 			    Vector2 offset;
@@ -157,76 +257,15 @@ namespace HighDensityHydro
 		        {
 			        preRotationOffset = offset,
 		            center = center,
-		            size = this.barsize,
-		            fillPercent = this.growth,
+		            size = this._barsize,
+		            fillPercent = this._curGrowth,
 		            filledMat = HDH_Graphics.HDHBarFilledMat,
 		            unfilledMat = HDH_Graphics.HDHBarUnfilledMat,
-		            margin = this.margin,
+		            margin = this._margin,
 		            rotation = this.Rotation.Rotated(RotationDirection.Clockwise)
 		        };
 		        GenDraw.DrawFillableBar(barReq);
 		    }
-		    
-		    
-		    //
-		    // if (this.currentPlantDefToGrow == null || this.storedPlants <= 0)
-		    //     return;
-		    //
-		    // // Cache the graphic
-		    // Graphic graphic;
-		    // if (!plantGraphicCache.TryGetValue(this.currentPlantDefToGrow, out graphic))
-		    // {
-		    //     graphic = this.currentPlantDefToGrow.graphicData.Graphic;
-		    //     plantGraphicCache[this.currentPlantDefToGrow] = graphic;
-		    // }
-		    //
-		    // // Stable non-wind material
-		    // Material mat = new Material(graphic.MatSingle);
-		    // mat.shader = ShaderDatabase.Cutout;
-		    //
-		    // // Use in-game ticks
-		    // int ticks = Find.TickManager.TicksGame;
-		    // float swayAmplitude = 0.005f;
-		    // float swaySpeed = 0.1f; // radians per tick (adjust to taste)
-		    // //float scale = Mathf.Lerp(0.2f, 1.0f, this.growth);
-		    //
-		    // List<IntVec3> cells = this.OccupiedRect().Cells.ToList();
-		    // int cellCount = cells.Count;
-		    //
-		    // int visibleCount = 0;
-		    // if (this.bayStage == BayStage.Growing)
-		    // {
-			   //  visibleCount = cellCount;
-		    // }
-		    // else if (this.bayStage == BayStage.Sowing && this.storedPlants > 0)
-		    // {
-			   //  visibleCount = Mathf.Clamp(Mathf.FloorToInt((this.storedPlants / (float)this.capacity) * cellCount), 1, cellCount);
-		    // }
-		    // else if (this.bayStage == BayStage.Harvest)
-		    // {
-			   //  visibleCount = 0;
-		    // }
-		    //
-		    // for (int i = 0; i < visibleCount; i++)
-		    // {
-			   //  IntVec3 cell = cells[i];
-		    //
-			   //  float phaseOffset = (cell.x * 17 + cell.z * 31) % 100 / 100f;
-			   //  float swayOffset = Mathf.Sin(ticks * swaySpeed + phaseOffset * Mathf.PI * 2f) * swayAmplitude;
-		    //
-			   //  Vector3 cellDrawPos = cell.ToVector3ShiftedWithAltitude(AltitudeLayer.BuildingOnTop);
-			   //  cellDrawPos.x += swayOffset;
-		    //
-			   //  float scale = Mathf.Lerp(0.2f, 1.0f, this.growth);
-		    //
-			   //  Matrix4x4 matrix = Matrix4x4.TRS(
-				  //   cellDrawPos,
-				  //   Quaternion.identity,
-				  //   new Vector3(scale, 1f, scale)
-			   //  );
-		    //
-			   //  Graphics.DrawMesh(MeshPool.plane10, matrix, mat, 0);
-		    // }
 		}
 		
 		//draw plants stuff
@@ -238,29 +277,29 @@ namespace HighDensityHydro
 		{
 			base.Print(layer);
 			
-			if (this.currentPlantDefToGrow == null || this.storedPlants <= 0)
+			if (this._currentPlantDefToGrow == null || this._numStoredPlants <= 0)
 				return;
 			
 			List<IntVec3> cells = this.OccupiedRect().Cells.ToList();
 			int cellCount = cells.Count;
 			int visibleCount = 0;
-			if (bayStage == BayStage.Growing)
+			if (_bayStage == BayStage.Growing)
 			{
 				visibleCount = cellCount;
 			}
-			else if (this.bayStage == BayStage.Sowing && this.storedPlants > 0)
+			else if (this._bayStage == BayStage.Sowing && this._numStoredPlants > 0)
 			{
-				visibleCount = Mathf.Clamp(Mathf.FloorToInt((this.storedPlants / (float)this.capacity) * cellCount), 1, cellCount);
+				visibleCount = Mathf.Clamp(Mathf.FloorToInt((this._numStoredPlants / (float)this._plantCapacity) * cellCount), 1, cellCount);
 			}
-			else if (this.bayStage == BayStage.Harvest)
+			else if (this._bayStage == BayStage.Harvest)
 			{
 				visibleCount = 0;
 			}
 			
-			Graphic graphic = currentPlantDefToGrow.graphicData.Graphic;
-			if (growth <= currentPlantDefToGrow.plant.harvestMinGrowth && currentPlantDefToGrow.plant.immatureGraphic != null)
+			Graphic graphic = _currentPlantDefToGrow.graphicData.Graphic;
+			if (_curGrowth <= _currentPlantDefToGrow.plant.harvestMinGrowth && _currentPlantDefToGrow.plant.immatureGraphic != null)
 			{
-				graphic = currentPlantDefToGrow.plant.immatureGraphic;
+				graphic = _currentPlantDefToGrow.plant.immatureGraphic;
 			}
 
 			Material baseMat = graphic.MatSingleFor(this);
@@ -272,21 +311,21 @@ namespace HighDensityHydro
 				Rand.PushState();
 				Rand.Seed = Gen.HashCombineInt(this.Position.GetHashCode(), i);
 
-				int num = Mathf.CeilToInt(this.growth * (float)currentPlantDefToGrow.plant.maxMeshCount);
+				int num = Mathf.CeilToInt(this._curGrowth * (float)_currentPlantDefToGrow.plant.maxMeshCount);
 				if (num < 1) num = 1;
 				
-				float num2 = this.currentPlantDefToGrow.plant.visualSizeRange.LerpThroughRange(this.growth);
-				float num3 = this.currentPlantDefToGrow.graphicData.drawSize.x * num2;
+				float num2 = this._currentPlantDefToGrow.plant.visualSizeRange.LerpThroughRange(this._curGrowth);
+				float num3 = this._currentPlantDefToGrow.graphicData.drawSize.x * num2;
 				int num4 = 0;
-				int[] positionIndices = GetStablePositionIndices(currentPlantDefToGrow, center, i);
+				int[] positionIndices = GetStablePositionIndices(_currentPlantDefToGrow, center, i);
 				bool flag = false;
 				foreach (int num5 in positionIndices)
 				{
 					Vector3 vector;
-					if (currentPlantDefToGrow.plant.maxMeshCount != 1)
+					if (_currentPlantDefToGrow.plant.maxMeshCount != 1)
 					{
 						int num6 = 1;
-						int maxMeshCount = currentPlantDefToGrow.plant.maxMeshCount;
+						int maxMeshCount = _currentPlantDefToGrow.plant.maxMeshCount;
 						switch (maxMeshCount)
 						{
 							case 1:  num6 = 1; break;
@@ -320,7 +359,7 @@ namespace HighDensityHydro
 						float num10 = (float)center.z -0.5f;
 						if (vector.z - num2 / 2f < num10)
 						{
-							vector.z = num10 + num2 / 2f + 0.2f;
+							vector.z = num10 + num2 / 2f;// + 0.2f; // removed  +0.2f because it doesn't match vanilla when the plants actually spawn in during harvest stage
 							flag = true;
 						}
 					}
@@ -337,7 +376,7 @@ namespace HighDensityHydro
 					Vector2[] uvs;
 					Color32 color;
 					Graphic.TryGetTextureAtlasReplacementInfo(mat, ThingCategory.Plant.ToAtlasGroup(), @bool, false, out mat, out uvs, out color);
-					SetWindExposureColors(workingColors, currentPlantDefToGrow);
+					SetWindExposureColors(workingColors, _currentPlantDefToGrow);
 					Vector2 size = new Vector2(num3, num3);
 					Printer_Plane.PrintPlane(layer, vector, size, mat, 0f, @bool, uvs, workingColors, 0.1f, (float)(this.HashOffset() % 1024));
 					num4++;
@@ -407,93 +446,114 @@ namespace HighDensityHydro
 			return rootList[maxMeshCount - 1][num];
 		}
 
-		// Token: 0x0600012D RID: 301
-		private void LoadConfig()
-		{
-			HydroStatsExtension modExt = this.def.GetModExtension<HydroStatsExtension>();
-			if (modExt != null)
-			{
-				this.capacity = modExt.capacity;
-				this.fertility = modExt.fertility;
-			}
-		}
 
-		// Token: 0x0600012E RID: 302
+
+		// sowing logic, should allow sowing and once plants are sowed, the hydroponics will "store" them by deleting
+		// them and then adding them to the internal counter
 		private void HandleSowing()
 		{
-			if (currentPlantDefToGrow == null)
+			if (_currentPlantDefToGrow == null)
 			{
-				currentPlantDefToGrow = GetPlantDefToGrow();
+				_currentPlantDefToGrow = GetPlantDefToGrow();
 			}
 
-			if (currentPlantDefToGrow != GetPlantDefToGrow())
+			if (_currentPlantDefToGrow != GetPlantDefToGrow())
 			{
-				currentPlantDefToGrow = GetPlantDefToGrow();
+				_currentPlantDefToGrow = GetPlantDefToGrow();
 				KillAllPlantsAndReset();
 			}
 			
-			foreach (Plant plant in base.PlantsOnMe.ToList<Plant>())
+			// if max, clean up current stage and move on to grow stage
+			if (_numStoredPlants >= _plantCapacity)
 			{
+				_numStoredPlants = _plantCapacity;
+				
+				// Cancel sowing jobs targeting this grower and then delete all current plants on the hydroponics
+				foreach (Pawn pawn in Map.mapPawns.AllPawnsSpawned)
+				{
+					Job curJob = pawn.CurJob;
+					if (curJob == null || curJob.def != JobDefOf.Sow || !curJob.targetA.HasThing) continue;
+					if (curJob.targetA.Thing == this)
+					{
+						pawn.jobs.EndCurrentJob(JobCondition.InterruptForced, true);
+					}
+				}
+				
+				foreach (Plant plant in PlantsOnMe.ToList<Plant>())
+				{
+					plant.DeSpawn(DestroyMode.Vanish);
+				}
+				
+				_bayStage = BayStage.Growing;
+				SoundDefOf.CryptosleepCasket_Accept.PlayOneShot(new TargetInfo(Position, Map, false));
+				return;
+			}
+			
+			// if not max, keep storing plants as normal
+			foreach (Plant plant in PlantsOnMe.ToList<Plant>())
+			{
+				// make sure the plant is actually growing (ie. pawns have finishing sowing the plant) before storing it
 				if (plant.LifeStage != PlantLifeStage.Growing)
 					continue;
 				
 				plant.DeSpawn(DestroyMode.Vanish);
-				this.storedPlants++;
-			}
-			
-			if (this.storedPlants >= this.capacity)
-			{
-				this.storedPlants = this.capacity;
-				foreach (Plant plant2 in base.PlantsOnMe.ToList<Plant>())
-				{
-					plant2.DeSpawn(DestroyMode.Vanish);
-				}
-				
-				// Cancel sowing jobs targeting this grower
-				foreach (Pawn pawn in this.Map.mapPawns.AllPawnsSpawned)
-				{
-					Job curJob = pawn.CurJob;
-					if (curJob != null && curJob.def == JobDefOf.Sow && curJob.targetA.HasThing)
-					{
-						if (curJob.targetA.Thing == this)
-						{
-							pawn.jobs.EndCurrentJob(JobCondition.InterruptForced, true);
-						}
-					}
-				}
-				this.bayStage = Building_HighDensityHydro.BayStage.Growing;
-				SoundDefOf.CryptosleepCasket_Accept.PlayOneShot(new TargetInfo(base.Position, base.Map, false));
+				_numStoredPlants++;
 			}
 		}
 
-		// Token: 0x0600012F RID: 303
+		// call this only in tick long, logic in here assume per 2000tick intervals
 		private void HandleGrowing()
 		{
-			if (this.PowerComp != null && !this.PowerComp.PowerOn)
+			ThingDef plantDef = _currentPlantDefToGrow;
+			if (plantDef?.plant == null)
 			{
-				this.avgGlow = -1f;
-				return;
-			}
-			float temperature = base.Position.GetTemperature(base.Map);
-			if (temperature < 10f || temperature > 42f)
-			{
-				this.avgGlow = -1f;
-				return;
-			}
-			float dayPct = GenLocalDate.DayPercent(this);
-			if (dayPct < 0.25f || dayPct > 0.8f)
-			{
-				this.avgGlow = -1f;
-				return;
-			}
-			ThingDef plantDef = currentPlantDefToGrow;
-			if (((plantDef != null) ? plantDef.plant : null) == null)
-			{
-				this.avgGlow = -1f;
+				Log.Warning("[HDH] No plantDef.plant found; skipping growth");
 				return;
 			}
 			
-			float growthRate = 0f;
+			// age the plant
+			_plantAge += 2000;
+			
+			// check if plant died of old age lmao
+			// 0 case is ageless
+			if (plantDef.plant.LifespanTicks > 0 && _plantAge > plantDef.plant.LifespanTicks)
+			{
+				//Log.Message($"[HDH] Plant died of old age at {_plantAge} ticks (lifespan: {_currentPlantDefToGrow.plant.LifespanTicks})");
+				Messages.Message("MessagePlantDiedOfRot".Translate(_currentPlantDefToGrow?.label ?? "plant"), new TargetInfo(base.Position, Map, false), MessageTypeDefOf.NegativeEvent, true);
+				_curGrowth = 0f;
+				_plantAge = 0;
+				_numStoredPlants = 0;
+				_numStoredPlantsBuffer = 0;
+				_averageHarvestGrowth = 0f;
+				_currentPlantDefToGrow = GetPlantDefToGrow();
+				_bayStage = BayStage.Sowing;
+				return;
+			}
+			
+			
+			_avgGlow = -1f;
+			
+			if (PowerComp != null && !PowerComp.PowerOn)
+			{
+				return;
+			}
+			
+			if (!PlantUtility.GrowthSeasonNow(Position, Map, _currentPlantDefToGrow))
+			{
+				return;
+			}
+			
+			float dayPct = GenLocalDate.DayPercent(this);
+			if (dayPct < 0.25f || dayPct > 0.8f)
+			{
+				return;
+			}
+			
+			//TODO: maybe add leafless check?
+			//TODO: check for vacuum as well
+			//TODO: check and track unlit ticks for rotting plants
+			
+			float growthRateFromGlow = 0f;
 			if (HDH_Mod.settings.lightRequirement)
 			{
 				float minGlow = plantDef.plant.growMinGlow;
@@ -502,71 +562,124 @@ namespace HighDensityHydro
 				int cellCount = 0;
 				foreach (IntVec3 cell in this.OccupiedRect().Cells)
 				{
-					totalGlow += base.Map.glowGrid.GroundGlowAt(cell, false, false);
+					totalGlow += Map.glowGrid.GroundGlowAt(cell, false, false);
 					cellCount++;
 				}
-				this.avgGlow = ((cellCount > 0) ? (totalGlow / (float)cellCount) : 1f);
-				if (this.avgGlow >= minGlow)
+				_avgGlow = ((cellCount > 0) ? (totalGlow / cellCount) : 1f);
+				if (_avgGlow >= minGlow)
 				{
-					growthRate = Mathf.Clamp01((this.avgGlow - minGlow) / (optimalGlow - minGlow));
+					growthRateFromGlow = Mathf.Clamp01((_avgGlow - minGlow) / (optimalGlow - minGlow));
 				}
 			
-				if (growthRate <= 0f)
+				if (growthRateFromGlow <= 0f)
 				{
 					return;
 				}
 			}
 			else
 			{
-				growthRate = 1f;
+				growthRateFromGlow = 1f;
 			}
 			
-			float growthPerTick = 1f / (60000f * this.growDays()) * 250f;
-			this.growth += this.fertility * growthRate * growthPerTick;
-			this.growth = Mathf.Clamp01(this.growth);
-			if (this.growth >= 1f)
+			// assume we are ticking in TickLong(), which we should
+			float growDays = _currentPlantDefToGrow.plant.growDays;
+			float growthPerTick = 1f / (60000f * growDays) * 2000f;
+			_curGrowth += _fertility * growthRateFromGlow * growthPerTick;
+			_curGrowth = Mathf.Clamp01(_curGrowth);
+			if (_curGrowth >= 1f)
 			{
-				this.bayStage = Building_HighDensityHydro.BayStage.Harvest;
+				_bayStage = BayStage.Harvest;
 			}
 		}
 
-		// Token: 0x06000130 RID: 304
 		private void HandleHarvest()
 		{
+			// this keeps track of unharvested plants
+			// all plants need to be harvested/stored before proceeding to next stage
+			bool allHarvested = true;
+			
+			ThingDef plantDef = _currentPlantDefToGrow;
+			if (plantDef?.plant == null)
+			{
+				Log.Warning("[HDH] No plantDef.plant found; skipping harvest");
+				return;
+			}
+			
 			foreach (IntVec3 cell in this.OccupiedRect().Cells)
 			{
-				if (this.storedPlants <= 0)
+				List<Thing> things = Map.thingGrid.ThingsListAt(cell);
+				Plant existingPlant = things.OfType<Plant>().FirstOrDefault();
+				
+				if (existingPlant != null)
 				{
-					break;
+					allHarvested = false;
 				}
-				if (!base.Map.thingGrid.ThingsListAt(cell).Any((Thing t) => t is Plant))
+				
+				if (existingPlant == null && _numStoredPlants > 0)
 				{
-					ThingDef plantDef = currentPlantDefToGrow;
-					if (plantDef != null)
+					Plant spawnedPlant = ((Plant)GenSpawn.Spawn(ThingMaker.MakeThing(plantDef, null), cell, Map, WipeMode.Vanish));
+					spawnedPlant.Growth = _curGrowth;
+					spawnedPlant.Age = _plantAge;
+					_numStoredPlants--;
+				}
+				else
+				{
+					if (plantDef.plant.harvestAfterGrowth > 0 && existingPlant?.def != null && 
+					    existingPlant.def == plantDef && existingPlant.Growth < 0.999f)
 					{
-						((Plant)GenSpawn.Spawn(ThingMaker.MakeThing(plantDef, null), cell, base.Map, WipeMode.Vanish)).Growth = 1f;
-						this.storedPlants--;
+						_averageHarvestGrowth += existingPlant.Growth;
+						existingPlant.DeSpawn(DestroyMode.Vanish);
+						_numStoredPlantsBuffer++;
 					}
 				}
 			}
-			if (this.storedPlants == 0)
-			{
-				this.growth = 0f;
 
-				currentPlantDefToGrow = GetPlantDefToGrow();
-				this.bayStage = Building_HighDensityHydro.BayStage.Sowing;
-			}
-		}
-
-		// Token: 0x06000131 RID: 305
-		private float growDays()
-		{
-			ThingDef plantDef = base.GetPlantDefToGrow();
-			if (plantDef == null || plantDef.plant == null)
+			if (_numStoredPlants != 0) return;
+			if (!allHarvested) return;
+			
+			// if it is a single harvest plant (eg rice), reset and go back to sowing stage
+			// if it is a multi harvest plant (eg ambrosia), reset buffer, set growth, and go to growing stage
+			if (plantDef.plant.harvestAfterGrowth == 0f)
 			{
-				return 5f;
+				_curGrowth = 0f;
+				_plantAge = 0;
+				_numStoredPlants = 0;
+				_numStoredPlantsBuffer = 0;
+				_averageHarvestGrowth = 0f;
+				_currentPlantDefToGrow = GetPlantDefToGrow();
+				_bayStage = BayStage.Sowing;
 			}
-			return plantDef.plant.growDays;
+			else
+			{
+				_averageHarvestGrowth /= (float)_numStoredPlantsBuffer;
+				
+				// Calculate estimated time to grow
+				// Assume optimal conditions and give a 5% fudge factor
+				// 0 case is ageless
+				float growthRemaining = 1f - _averageHarvestGrowth;
+				float estimatedTicksToGrow = (growthRemaining * 60000f * plantDef.plant.growDays) / 
+					(32500f * _fertility) * 60000f * 1.05f;
+				
+				int ageAfterNextGrow = _plantAge + (int)estimatedTicksToGrow;
+				bool willDieBeforeNextHarvest = plantDef.plant.LifespanTicks > 0 && ageAfterNextGrow > plantDef.plant.LifespanTicks;
+				
+				if (willDieBeforeNextHarvest)
+				{
+					_curGrowth = 0f;
+					_plantAge = 0;
+					_numStoredPlantsBuffer = 0;
+					_averageHarvestGrowth = 0f;
+					_currentPlantDefToGrow = GetPlantDefToGrow();
+					_bayStage = BayStage.Sowing;
+					return;
+				}
+				
+				_numStoredPlants = _numStoredPlantsBuffer;
+				_numStoredPlantsBuffer = 0;
+				_curGrowth = _averageHarvestGrowth;
+				_averageHarvestGrowth = 0f;
+				_bayStage = BayStage.Growing;
+			}
 		}
 
 		// Token: 0x17000014 RID: 20
@@ -575,29 +688,38 @@ namespace HighDensityHydro
 		{
 			get
 			{
-				if (this.powerCompCached == null)
+				if (this._powerCompCached == null)
 				{
-					this.powerCompCached = base.GetComp<CompPowerTrader>();
+					this._powerCompCached = base.GetComp<CompPowerTrader>();
 				}
-				return this.powerCompCached;
+				return this._powerCompCached;
 			}
 		}
 
 		// Token: 0x06000142 RID: 322
 		public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
 		{
-			//this.KillAllPlantsAndReset();
+			// Check if we're being minified
+			if (mode == DestroyMode.Vanish)
+			{
+				//Log.Message($"[HDH] {this} is being minified — clearing internal plants.");
+				KillAllPlantsAndReset();
+			}
+
 			base.DeSpawn(mode);
-			drawMatrixCache.Clear();
+			_drawMatrixCache.Clear();
 		}
 
 		// Token: 0x0600015B RID: 347
 		private void KillAllPlantsAndReset()
 		{
-			this.storedPlants = 0;
-			this.growth = 0f;
-			this.bayStage = Building_HighDensityHydro.BayStage.Sowing;
-			foreach (Plant plant in base.PlantsOnMe.ToList<Plant>())
+			_bayStage = BayStage.Sowing;
+			_numStoredPlants = 0;
+			_numStoredPlantsBuffer = 0;
+			_plantAge = 0;
+			_curGrowth = 0f;
+			_averageHarvestGrowth = 0f;
+			foreach (Plant plant in PlantsOnMe.ToList<Plant>())
 			{
 				plant.Destroy(DestroyMode.Vanish);
 			}
@@ -605,55 +727,14 @@ namespace HighDensityHydro
 
 		public int GetHDHCapacity()
 		{
-			return capacity;
+			return _plantCapacity;
 		}
 
 		public int GetNumStoredPlants()
 		{
-			return storedPlants;
+			return _numStoredPlants;
 		}
 
-		// Token: 0x040000C8 RID: 200
-		private int capacity;
 
-		// Token: 0x040000C9 RID: 201
-		private float fertility = 2.8f;
-
-		// Token: 0x040000CA RID: 202
-		private Building_HighDensityHydro.BayStage bayStage;
-
-		// Token: 0x040000CB RID: 203
-		private Vector2 barsize;
-
-		// Token: 0x040000CC RID: 204
-		private float margin;
-
-		// Token: 0x040000CD RID: 205
-		private int storedPlants = 0;
-
-		// Token: 0x040000CE RID: 206
-		private float growth = 0;
-
-		// Token: 0x040000D1 RID: 209
-		private CompPowerTrader powerCompCached;
-
-		// Token: 0x040000E7 RID: 231
-		private bool wasPoweredLastTick = true;
-
-		// Token: 0x0400011E RID: 286
-		private float avgGlow;
-
-		private ThingDef currentPlantDefToGrow = null;
-
-		// Token: 0x02000009 RID: 9
-		private enum BayStage
-		{
-			// Token: 0x040000C5 RID: 197
-			Sowing,
-			// Token: 0x040000C6 RID: 198
-			Growing,
-			// Token: 0x040000C7 RID: 199
-			Harvest
-		}
 	}
 }
