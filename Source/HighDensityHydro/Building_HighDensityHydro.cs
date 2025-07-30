@@ -92,10 +92,10 @@ namespace HighDensityHydro
 			// }
 			
 			// fix wierd edge case
-			if (_numStoredPlants > _plantCapacity)
-			{
-				_numStoredPlants = _plantCapacity;
-			}
+			// if (_numStoredPlants > _plantCapacity)
+			// {
+			// 	_numStoredPlants = _plantCapacity;
+			// }
 		}
 		
 		public override string GetInspectString()
@@ -164,6 +164,15 @@ namespace HighDensityHydro
 						_plantAge += 60000;
 					}
 				};
+				
+				// yield return new Command_Action
+				// {
+				// 	defaultLabel = "Dev: Set stored plants to 0",
+				// 	action = delegate()
+				// 	{
+				// 		_numStoredPlants = 0;
+				// 	}
+				// };
 			}
 		}
 
@@ -513,7 +522,14 @@ namespace HighDensityHydro
 			ThingDef plantDef = _currentPlantDefToGrow;
 			if (plantDef?.plant == null)
 			{
-				Log.Warning("[HDH] No plantDef.plant found; skipping growth");
+				Log.Warning($"[HDH] [{this.ThingID}] No plantDef.plant found; skipping growth");
+				return;
+			}
+			
+			if (_numStoredPlants == 0)
+			{
+				Log.Warning($"[HDH] [{this.ThingID}] No stored plants during growing stage, going back to sowing");
+				KillAllPlantsAndReset();
 				return;
 			}
 			
