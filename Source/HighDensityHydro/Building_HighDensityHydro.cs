@@ -533,6 +533,13 @@ namespace HighDensityHydro
 				return;
 			}
 			
+			if (_numStoredPlants > _plantCapacity)
+			{
+				Log.Warning($"[HDH] [{ThingID}] Number of stored plant is at  {_numStoredPlants}, which is higher than the capacity of {_plantCapacity}, setting it to capacity");
+				_numStoredPlants = _plantCapacity;
+				return;
+			}
+			
 			// age the plant
 			_plantAge += 2000;
 			
