@@ -77,7 +77,7 @@ namespace HighDensityHydro
 		public override void ExposeData()
 		{
 			base.ExposeData();
-			Scribe_Values.Look<int>(ref this._tickCounter, "storedPlants", 0, false);
+			Scribe_Values.Look<int>(ref this._tickCounter, "tickCounter", 0, false);
 			Scribe_Values.Look<Building_HighDensityHydro.BayStage>(ref this._bayStage, "bayStage", Building_HighDensityHydro.BayStage.Sowing, false);
 			Scribe_Values.Look<int>(ref this._numStoredPlants, "storedPlants", 0, false);
 			Scribe_Values.Look<int>(ref this._numStoredPlantsBuffer, "storedPlantsBuffer", 0, false);
@@ -90,6 +90,12 @@ namespace HighDensityHydro
 			// {
 			// 	Log.Warning($"[HDH] Loading hydro: storedPlants={storedPlants}, growth={growth}, stage={bayStage}");
 			// }
+			
+			// fix wierd edge case
+			if (_numStoredPlants > _plantCapacity)
+			{
+				_numStoredPlants = _plantCapacity;
+			}
 		}
 		
 		public override string GetInspectString()
