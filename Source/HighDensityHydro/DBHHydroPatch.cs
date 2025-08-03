@@ -173,7 +173,7 @@ namespace HighDensityHydro
                 var pipeNet = pipeNetProp?.GetValue(compPipe);
                 if (anyRecyclersDelegate != null && (pipeNet == null || !anyRecyclersDelegate(pipeNet)))
                 {
-                    fuel.ConsumeFuel(0.05f * __instance.GetNumStoredPlants());
+                    fuel.ConsumeFuel(0.05f * __instance.StoredPlantCount);
                 }
 
                 compPipeTickRareDelegate?.Invoke(compPipe);

@@ -32,15 +32,28 @@ namespace HighDensityHydro
 		private bool _wasPoweredLastTick = true;
 
 		// plant stuff
+		// I should make a custom plant class or struct
 		private ThingDef _currentPlantDefToGrow = null;
+		//private float _plantHealth = 100f;
 		private int _plantAge = 0;
 		private int _plantCapacity;
+		private int _plantCapacityFromDef;
 		private int _numStoredPlants = 0;
 		private int _numStoredPlantsBuffer = 0; // buffer used for multi-harvestable plants
-		private float _fertility = 2.8f;
+		private float _fertility = 2.8f; // default
 		private float _curGrowth = 0;
 		private float _avgGlow;
 		private float _averageHarvestGrowth = 0f; // this keeps track of average growth of plants that can be harvested multiple times
+		private bool _requiresLightCheck = true;
+		private bool _requiresTemperatureCheck = true;
+		private bool _requiresAtmosphereCheck = true;
+		private bool _powerScalesCapacity = false;
+		private float _basePowerIncrease = 50f;
+		private float _capacityExponent = 1.2f;
+		private readonly int _plantsPerLayer = 4;
+		private int _currentPowerScalingLevel = 0;
+		private int _maxPowerScalingLevel = 100;
+		
 		
 		public Building_HighDensityHydro()
 		{
@@ -62,6 +75,8 @@ namespace HighDensityHydro
 			
 			//TODO: maybe move this somewhere else, should only be called and generated once
 			PlantPosIndices();
+
+			_plantCapacity = CalculateCurrentPlantCapacity();
 		}
 		
 		private void LoadConfig()
@@ -69,8 +84,15 @@ namespace HighDensityHydro
 			HydroStatsExtension modExt = def.GetModExtension<HydroStatsExtension>();
 			if (modExt != null)
 			{
-				_plantCapacity = modExt.capacity;
+				_plantCapacityFromDef = modExt.capacity;
 				_fertility = modExt.fertility;
+				_requiresLightCheck = modExt.requiresLightCheck;
+				_requiresTemperatureCheck = modExt.requiresTemperatureCheck;
+				_requiresAtmosphereCheck = modExt.requiresAtmosphereCheck;
+				_powerScalesCapacity = modExt.powerScalesCapacity;
+				_basePowerIncrease = modExt.basePowerIncrease;
+				_capacityExponent = modExt.capacityExponent;
+				_maxPowerScalingLevel = modExt.maxPowerScalingLevel;
 			}
 		}
 		
@@ -85,6 +107,9 @@ namespace HighDensityHydro
 			Scribe_Values.Look<float>(ref this._curGrowth, "growth", 0f, false);
 			Scribe_Values.Look<float>(ref this._averageHarvestGrowth, "averageHarvestGrowth", 0f, false);
 			Scribe_Defs.Look(ref _currentPlantDefToGrow, "queuedPlantDefToGrow");
+			Scribe_Values.Look<int>(ref this._plantCapacity, "plantCapacity", 0, false);
+			Scribe_Values.Look<int>(ref this._currentPowerScalingLevel, "currentPowerScalingLevel", 0, false);
+			
 			
 			// if (Scribe.mode == LoadSaveMode.LoadingVars)
 			// {
@@ -526,7 +551,7 @@ namespace HighDensityHydro
 				return;
 			}
 			
-			if (_numStoredPlants == 0)
+			if (_numStoredPlants <= 0)
 			{
 				Log.Warning($"[HDH] [{this.ThingID}] No stored plants during growing stage, going back to sowing");
 				KillAllPlantsAndReset();
@@ -567,7 +592,7 @@ namespace HighDensityHydro
 				return;
 			}
 			
-			if (!PlantUtility.GrowthSeasonNow(Position, Map, _currentPlantDefToGrow))
+			if (!PlantUtility.GrowthSeasonNow(Position, Map, _currentPlantDefToGrow) && _requiresTemperatureCheck)
 			{
 				return;
 			}
@@ -583,7 +608,7 @@ namespace HighDensityHydro
 			//TODO: check and track unlit ticks for rotting plants
 			
 			float growthRateFromGlow = 0f;
-			if (HDH_Mod.settings.lightRequirement)
+			if (HDH_Mod.settings.lightRequirement && _requiresLightCheck)
 			{
 				float minGlow = plantDef.plant.growMinGlow;
 				float optimalGlow = plantDef.plant.growOptimalGlow;
@@ -753,17 +778,63 @@ namespace HighDensityHydro
 				plant.Destroy(DestroyMode.Vanish);
 			}
 		}
-
-		public int GetHDHCapacity()
+		
+		public void AdjustCapacity(int scalingLevelOffset)
 		{
-			return _plantCapacity;
+			if (_powerCompCached == null)
+			{
+				return;
+			}
+			_currentPowerScalingLevel += scalingLevelOffset;
+			if (_currentPowerScalingLevel < 0)
+			{
+				_currentPowerScalingLevel = 0;
+			}
+			
+			if (_currentPowerScalingLevel > _maxPowerScalingLevel)
+			{
+				_currentPowerScalingLevel = _maxPowerScalingLevel;
+			}
+			_powerCompCached.PowerOutput = -1 * CalculateCurrentPowerCost();
+			_plantCapacity = CalculateCurrentPlantCapacity();
 		}
 
-		public int GetNumStoredPlants()
+		public int CalculateCurrentPlantCapacity()
 		{
-			return _numStoredPlants;
+			return _plantCapacityFromDef + _currentPowerScalingLevel * _plantsPerLayer;
+		}
+		
+		public float CalculateCurrentPowerCost()
+		{
+			return CalculatePowerCost(_currentPowerScalingLevel);
+		}
+		public float CalculatePowerCost(int scalingLevel)
+		{
+			var power = _powerCompCached ?? GetComp<CompPowerTrader>();
+			if (power == null)
+				return 0f;
+			
+			return this.def.GetCompProperties<CompProperties_Power>().PowerConsumption + (_basePowerIncrease * Mathf.Pow(_capacityExponent, scalingLevel));
 		}
 
-
+		public float CalculateNextPowerCostIncrease()
+		{
+			return CalculatePowerCost(_currentPowerScalingLevel + 1) - CalculatePowerCost(_currentPowerScalingLevel);
+		}
+		public int MaxPlantCapacity => _plantCapacity;
+		public int StoredPlantCount => _numStoredPlants;
+		public ThingDef CurrentPlantedDef => _currentPlantDefToGrow;
+		public int PlantAge => _plantAge;
+		public float Fertility => _fertility;
+		public float PlantGrowth => _curGrowth;
+		public float LastAverageGlow => _avgGlow;
+		public bool RequiresLightCheck => _requiresLightCheck;
+		public bool RequiresTemperatureCheck => _requiresTemperatureCheck;
+		public bool RequiresAtmosphereCheck => _requiresAtmosphereCheck;
+		public bool PowerScalesCapacity => _powerScalesCapacity;
+		public float BasePowerIncrease => _basePowerIncrease;
+		public float CapacityExponent => _capacityExponent;
+		public int PlantsPerLayer => _plantsPerLayer;
+		public int CurrentPowerScalingLevel => _currentPowerScalingLevel;
 	}
 }

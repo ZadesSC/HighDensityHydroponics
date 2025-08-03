@@ -53,9 +53,18 @@
           <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
           <Private>False</Private>
         </Reference>
+        <Reference Include="UnityEngine.IMGUIModule">
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
+        <Reference Include="UnityEngine.TextRenderingModule">
+          <HintPath>..\..\..\..\RimWorldWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+          <Private>False</Private>
+        </Reference>
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Building_HighDensityHydro.cs" />
+        <Compile Include="ITab_HDHDetails.cs" />
         <Compile Include="Patch_Command_SetPlantToGrow.cs" />
         <Compile Include="DBHHydroPatch.cs" />
         <Compile Include="HDDefOf.cs" />
