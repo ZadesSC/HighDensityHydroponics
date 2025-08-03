@@ -34,7 +34,7 @@ namespace HighDensityHydro
 		// plant stuff
 		// I should make a custom plant class or struct
 		private ThingDef _currentPlantDefToGrow = null;
-		//private float _plantHealth = 100f;
+		private float _plantHealth = 100f;
 		private int _plantAge = 0;
 		private int _plantCapacity;
 		private int _plantCapacityFromDef;
@@ -212,13 +212,13 @@ namespace HighDensityHydro
 			//base.TickRare();
 			
 			bool poweredNow = this.PowerComp == null || this.PowerComp.PowerOn;
-			if (HDH_Mod.settings.killPlantsOnNoPower)
-			{
-				if (this._wasPoweredLastTick && !poweredNow)
-				{
-					this.KillAllPlantsAndReset();
-				}
-			}
+			// if (HDH_Mod.settings.killPlantsOnNoPower)
+			// {
+			// 	if (this._wasPoweredLastTick && !poweredNow)
+			// 	{
+			// 		this.KillAllPlantsAndReset();
+			// 	}
+			// }
 			this._wasPoweredLastTick = poweredNow;
 			
 			switch (_bayStage)
@@ -492,14 +492,10 @@ namespace HighDensityHydro
 		// them and then adding them to the internal counter
 		private void HandleSowing()
 		{
-			if (_currentPlantDefToGrow == null)
+			if (_currentPlantDefToGrow == null || _currentPlantDefToGrow != GetPlantDefToGrow())
 			{
 				_currentPlantDefToGrow = GetPlantDefToGrow();
-			}
-
-			if (_currentPlantDefToGrow != GetPlantDefToGrow())
-			{
-				_currentPlantDefToGrow = GetPlantDefToGrow();
+				_plantHealth = _currentPlantDefToGrow.BaseMaxHitPoints;
 				KillAllPlantsAndReset();
 			}
 			
@@ -565,6 +561,41 @@ namespace HighDensityHydro
 				return;
 			}
 			
+			// damage the plant if it is dying for whatever reason
+			float dyingDamage = PlantCurrentDyingDamagePerTick * 2000f;
+			PlantTakeDamage(dyingDamage);
+			
+			
+			// damage the plant is there is no power (or water from DBH)
+			if (this._powerCompCached != null && !this._powerCompCached.PowerOn && HDH_Mod.settings.killPlantsOnNoPower)
+			{
+				PlantTakeDamage(1f);
+			}
+			
+			// check plant health
+			if (_plantHealth <= 0)
+			{
+				string key = "";
+				 if (DyingBecauseExposedToVacuum)
+				{
+					key = "MessagePlantDiedOfRot_ExposedToVacuum";
+				}
+				else
+				{
+					key = "MessagePlantDiedOfRot";
+				}
+				Messages.Message(key.Translate(_currentPlantDefToGrow?.label ?? "plant"), new TargetInfo(base.Position, this.Map, false), MessageTypeDefOf.NegativeEvent, true);
+				_curGrowth = 0f;
+				_plantAge = 0;
+				_numStoredPlants = 0;
+				_numStoredPlantsBuffer = 0;
+				_averageHarvestGrowth = 0f;
+				_currentPlantDefToGrow = GetPlantDefToGrow();
+				_bayStage = BayStage.Sowing;
+				_plantHealth = _currentPlantDefToGrow.BaseMaxHitPoints;
+				return;
+			}
+			
 			// age the plant
 			_plantAge += 2000;
 			
@@ -581,6 +612,7 @@ namespace HighDensityHydro
 				_averageHarvestGrowth = 0f;
 				_currentPlantDefToGrow = GetPlantDefToGrow();
 				_bayStage = BayStage.Sowing;
+				_plantHealth = 0f;
 				return;
 			}
 			
@@ -780,6 +812,71 @@ namespace HighDensityHydro
 			}
 		}
 		
+		public float PlantCurrentDyingDamagePerTick
+		{
+			get
+			{
+				if (!base.Spawned)
+				{
+					return 0f;
+				}
+				float num = 0f;
+				if (_currentPlantDefToGrow.plant.LimitedLifespan && _plantAge > _currentPlantDefToGrow.plant.LifespanTicks)
+				{
+					num = Mathf.Max(num, 0.005f);
+				}
+				// TODO: add dying for no sunlight and dying exposed to light
+				// if (!_currentPlantDefToGrow.plant.diesToLight && _currentPlantDefToGrow.plant.dieIfNoSunlight && this.unlitTicks > 450000)
+				// {
+				// 	num = Mathf.Max(num, 0.005f);
+				// }
+				// if (DyingBecauseExposedToLight)
+				// {
+				// 	float lerpPct = _avgGlow;
+				// 	num = Mathf.Max(num, Plant.DyingDamagePerTickBecauseExposedToLight.LerpThroughRange(lerpPct));
+				// }
+				if (this.DyingBecauseExposedToVacuum)
+				{
+					num = Mathf.Max(num, 1f * base.Position.GetVacuum(base.Map));
+				}
+				// We don't track pollution or terrain
+				// if (this.DyingFromPollution || this.DyingFromNoPollution)
+				// {
+				// 	num = Mathf.Max(num, Plant.PollutionDamagePerTickRange.RandomInRangeSeeded(base.Position.GetHashCode()));
+				// }
+				// if (this.DyingBecauseOfTerrainTags)
+				// {
+				// 	num = Mathf.Max(num, 0.005f);
+				// }
+				return num;
+			}
+		}
+
+		private void PlantTakeDamage(float damage)
+		{
+			_plantHealth -= damage;
+		}
+		private bool DyingBecauseExposedToLight
+		{
+			get
+			{
+				return _currentPlantDefToGrow.plant.diesToLight && base.Spawned && _avgGlow > 0f;
+			}
+		}
+
+		private bool DyingBecauseExposedToVacuum
+		{
+			get { return !_currentPlantDefToGrow.plant.vacuumResistant && base.Spawned && base.Position.GetVacuum(base.Map) >= 0.5f; }
+		}
+		
+		private bool Dying
+		{
+			get
+			{
+				return this.PlantCurrentDyingDamagePerTick > 0f;
+			}
+		}
+
 		public void AdjustCapacity(int scalingLevelOffset)
 		{
 			if (_powerCompCached == null)
@@ -826,6 +923,7 @@ namespace HighDensityHydro
 		public int StoredPlantCount => _numStoredPlants;
 		public ThingDef CurrentPlantedDef => _currentPlantDefToGrow;
 		public int PlantAge => _plantAge;
+		public float PlantHealth => _plantHealth;
 		public float Fertility => _fertility;
 		public float PlantGrowth => _curGrowth;
 		public float LastAverageGlow => _avgGlow;

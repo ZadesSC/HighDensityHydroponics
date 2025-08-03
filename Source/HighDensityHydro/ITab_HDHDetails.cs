@@ -88,7 +88,7 @@ namespace HighDensityHydro
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(infoBox);
             listing.Label($"Stored Plants: {storedPlants} / {maxCapacity}");
-            listing.Label($"Plant Health: 100 / 100");
+            listing.Label($"Plant Health: {building.PlantHealth} / {building.CurrentPlantedDef.BaseMaxHitPoints}");
             listing.Label($"Growth: {building.PlantGrowth:P0}");
             listing.Label($"Fertility: {building.Fertility:P0}");
             if (lightLevel < 0)
