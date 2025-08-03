@@ -637,8 +637,9 @@ namespace HighDensityHydro
 			
 			// assume we are ticking in TickLong(), which we should
 			float growDays = _currentPlantDefToGrow.plant.growDays;
+			float fertilitySensitivity = _currentPlantDefToGrow.plant.fertilitySensitivity;
 			float growthPerTick = 1f / (60000f * growDays) * 2000f;
-			_curGrowth += _fertility * growthRateFromGlow * growthPerTick;
+			_curGrowth += fertilitySensitivity * _fertility * growthRateFromGlow * growthPerTick;
 			_curGrowth = Mathf.Clamp01(_curGrowth);
 			if (_curGrowth >= 1f)
 			{
