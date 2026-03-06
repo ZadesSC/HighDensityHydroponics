@@ -469,18 +469,18 @@ namespace HighDensityHydro
 		//draw plants stuff
 		private static int[][][] rootList = new int[25][][];
 		//draw plants stuff
-		static void PlantPosIndices()
-		{
-			for (int i = 0; i < 25; i++)
+			static void PlantPosIndices()
 			{
-				rootList[i] = new int[8][];
-				for (int j = 0; j < 8; j++)
+				for (int i = 0; i < 25; i++)
 				{
-					int[] array = new int[i + 1];
-					for (int k = 0; k < i; k++)
+					rootList[i] = new int[8][];
+					for (int j = 0; j < 8; j++)
 					{
-						array[k] = k;
-					}
+						int[] array = new int[i + 1];
+						for (int k = 0; k <= i; k++)
+						{
+							array[k] = k;
+						}
 
 					array.Shuffle<int>();
 					rootList[i][j] = array;
@@ -489,12 +489,20 @@ namespace HighDensityHydro
 		}
 		
 		//draw plants stuff
-		private static int[] GetStablePositionIndices(ThingDef plant, Vector3 cell, int index)
-		{
-			int maxMeshCount = plant.plant.maxMeshCount;
-			int num = ((cell.GetHashCode() + index) ^ 42348528) % 8;
-			return rootList[maxMeshCount - 1][num];
-		}
+			private static int[] GetStablePositionIndices(ThingDef plant, Vector3 cell, int index)
+			{
+				int maxMeshCount = plant.plant.maxMeshCount;
+				if (maxMeshCount < 1 || maxMeshCount > rootList.Length)
+				{
+					return new[] { 0 };
+				}
+				int num = ((cell.GetHashCode() + index) ^ 42348528) % 8;
+				if (num < 0)
+				{
+					num += 8;
+				}
+				return rootList[maxMeshCount - 1][num];
+			}
 
 
 
@@ -724,19 +732,30 @@ namespace HighDensityHydro
 			{
 				ResetPlantStateForSowing(clearSpawnedPlants: false);
 			}
-			else
-			{
-				_averageHarvestGrowth /= (float)_numStoredPlantsBuffer;
-				
-				// Calculate estimated time to grow
-				// Assume optimal conditions and give a 5% fudge factor
-				// 0 case is ageless
-				float growthRemaining = 1f - _averageHarvestGrowth;
-				float estimatedTicksToGrow = (growthRemaining * 60000f * plantDef.plant.growDays) / 
-					(32500f * _fertility) * 60000f * 1.05f;
-				
-				int ageAfterNextGrow = _plantAge + (int)estimatedTicksToGrow;
-				bool willDieBeforeNextHarvest = plantDef.plant.LifespanTicks > 0 && ageAfterNextGrow > plantDef.plant.LifespanTicks;
+				else
+				{
+					if (_numStoredPlantsBuffer <= 0)
+					{
+						ResetPlantStateForSowing(clearSpawnedPlants: false);
+						return;
+					}
+					_averageHarvestGrowth /= (float)_numStoredPlantsBuffer;
+					
+					// Calculate estimated time to grow
+					// Assume optimal conditions and give a 5% fudge factor
+					// 0 case is ageless
+					float growthRemaining = 1f - _averageHarvestGrowth;
+					float growthPerTick = (plantDef.plant.fertilitySensitivity * _fertility) *
+					                      (2000f / (60000f * plantDef.plant.growDays));
+					if (growthPerTick <= 0f)
+					{
+						ResetPlantStateForSowing(clearSpawnedPlants: false);
+						return;
+					}
+					float estimatedTicksToGrow = Mathf.Max(0f, (growthRemaining / growthPerTick) * 2000f * 1.05f);
+					
+					int ageAfterNextGrow = _plantAge + (int)estimatedTicksToGrow;
+					bool willDieBeforeNextHarvest = plantDef.plant.LifespanTicks > 0 && ageAfterNextGrow > plantDef.plant.LifespanTicks;
 				
 				if (willDieBeforeNextHarvest)
 				{
@@ -808,14 +827,14 @@ namespace HighDensityHydro
 			}
 		}
 		
-		public float PlantCurrentDyingDamagePerTick
-		{
-			get
+			public float PlantCurrentDyingDamagePerTick
 			{
-				if (!base.Spawned)
+				get
 				{
-					return 0f;
-				}
+					if (!base.Spawned || _currentPlantDefToGrow?.plant == null)
+					{
+						return 0f;
+					}
 				float num = 0f;
 				if (_currentPlantDefToGrow.plant.LimitedLifespan && _plantAge > _currentPlantDefToGrow.plant.LifespanTicks)
 				{
@@ -831,10 +850,10 @@ namespace HighDensityHydro
 				// 	float lerpPct = _avgGlow;
 				// 	num = Mathf.Max(num, Plant.DyingDamagePerTickBecauseExposedToLight.LerpThroughRange(lerpPct));
 				// }
-				if (this.DyingBecauseExposedToVacuum)
-				{
-					num = Mathf.Max(num, 1f * base.Position.GetVacuum(base.Map));
-				}
+					if (_requiresAtmosphereCheck && this.DyingBecauseExposedToVacuum)
+					{
+						num = Mathf.Max(num, 1f * base.Position.GetVacuum(base.Map));
+					}
 				// We don't track pollution or terrain
 				// if (this.DyingFromPollution || this.DyingFromNoPollution)
 				// {
@@ -860,10 +879,17 @@ namespace HighDensityHydro
 			}
 		}
 
-		private bool DyingBecauseExposedToVacuum
-		{
-			get { return !_currentPlantDefToGrow.plant.vacuumResistant && base.Spawned && base.Position.GetVacuum(base.Map) >= 0.5f; }
-		}
+			private bool DyingBecauseExposedToVacuum
+			{
+				get
+				{
+					return _requiresAtmosphereCheck &&
+					       _currentPlantDefToGrow?.plant != null &&
+					       !_currentPlantDefToGrow.plant.vacuumResistant &&
+					       base.Spawned &&
+					       base.Position.GetVacuum(base.Map) >= 0.5f;
+				}
+			}
 		
 		private bool Dying
 		{

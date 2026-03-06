@@ -176,7 +176,10 @@ namespace HighDensityHydro
                     fuel.ConsumeFuel(0.05f * __instance.StoredPlantCount);
                 }
 
-                compPipeTickRareDelegate?.Invoke(compPipe);
+                if (compPipe != null)
+                {
+                    compPipeTickRareDelegate?.Invoke(compPipe);
+                }
                 
             }
             return true;
