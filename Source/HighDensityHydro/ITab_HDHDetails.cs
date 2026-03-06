@@ -87,8 +87,19 @@ namespace HighDensityHydro
             Rect infoBox = new Rect(mainRect.x + 120f, mainRect.y + lineHeight + 5f, mainRect.width - 130f, lineHeight * 7);
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(infoBox);
+            if (currentPlant == null)
+            {
+                listing.Label("Currently Growing: None");
+            }
             listing.Label($"Stored Plants: {storedPlants} / {maxCapacity}");
-            listing.Label($"Plant Health: {building.PlantHealth} / {building.CurrentPlantedDef.BaseMaxHitPoints}");
+            if (currentPlant == null)
+            {
+                listing.Label("Plant Health: N/A");
+            }
+            else
+            {
+                listing.Label($"Plant Health: {building.PlantHealth:F0} / {currentPlant.BaseMaxHitPoints}");
+            }
             listing.Label($"Growth: {building.PlantGrowth:P0}");
             listing.Label($"Fertility: {building.Fertility:P0}");
             if (lightLevel < 0)

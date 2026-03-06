@@ -50,7 +50,7 @@ namespace HighDensityHydro
 		private bool _powerScalesCapacity = false;
 		private float _basePowerIncrease = 50f;
 		private float _capacityExponent = 1.2f;
-		private readonly int _plantsPerLayer = 4;
+		private int _plantsPerLayer = 4;
 		private int _currentPowerScalingLevel = 0;
 		private int _maxPowerScalingLevel = 100;
 		
@@ -93,6 +93,7 @@ namespace HighDensityHydro
 				_basePowerIncrease = modExt.basePowerIncrease;
 				_capacityExponent = modExt.capacityExponent;
 				_maxPowerScalingLevel = modExt.maxPowerScalingLevel;
+				_plantsPerLayer = Math.Max(1, modExt.plantsPerLayer);
 			}
 		}
 		
@@ -109,6 +110,15 @@ namespace HighDensityHydro
 			Scribe_Defs.Look(ref _currentPlantDefToGrow, "queuedPlantDefToGrow");
 			Scribe_Values.Look<int>(ref this._plantCapacity, "plantCapacity", 0, false);
 			Scribe_Values.Look<int>(ref this._currentPowerScalingLevel, "currentPowerScalingLevel", 0, false);
+			Scribe_Values.Look<float>(ref this._plantHealth, "plantHealth", -1f, false);
+			
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				if (_plantHealth < 0f)
+				{
+					_plantHealth = _currentPlantDefToGrow?.BaseMaxHitPoints ?? 100f;
+				}
+			}
 			
 			
 			// if (Scribe.mode == LoadSaveMode.LoadingVars)
@@ -494,9 +504,7 @@ namespace HighDensityHydro
 		{
 			if (_currentPlantDefToGrow == null || _currentPlantDefToGrow != GetPlantDefToGrow())
 			{
-				_currentPlantDefToGrow = GetPlantDefToGrow();
-				_plantHealth = _currentPlantDefToGrow.BaseMaxHitPoints;
-				KillAllPlantsAndReset();
+				ResetPlantStateForSowing(clearSpawnedPlants: true);
 			}
 			
 			// if max, clean up current stage and move on to grow stage
@@ -550,7 +558,7 @@ namespace HighDensityHydro
 			if (_numStoredPlants <= 0)
 			{
 				Log.Warning($"[HDH] [{this.ThingID}] No stored plants during growing stage, going back to sowing");
-				KillAllPlantsAndReset();
+				ResetPlantStateForSowing(clearSpawnedPlants: true);
 				return;
 			}
 			
@@ -585,14 +593,7 @@ namespace HighDensityHydro
 					key = "MessagePlantDiedOfRot";
 				}
 				Messages.Message(key.Translate(_currentPlantDefToGrow?.label ?? "plant"), new TargetInfo(base.Position, this.Map, false), MessageTypeDefOf.NegativeEvent, true);
-				_curGrowth = 0f;
-				_plantAge = 0;
-				_numStoredPlants = 0;
-				_numStoredPlantsBuffer = 0;
-				_averageHarvestGrowth = 0f;
-				_currentPlantDefToGrow = GetPlantDefToGrow();
-				_bayStage = BayStage.Sowing;
-				_plantHealth = _currentPlantDefToGrow.BaseMaxHitPoints;
+				ResetPlantStateForSowing(clearSpawnedPlants: false);
 				return;
 			}
 			
@@ -605,14 +606,7 @@ namespace HighDensityHydro
 			{
 				//Log.Message($"[HDH] Plant died of old age at {_plantAge} ticks (lifespan: {_currentPlantDefToGrow.plant.LifespanTicks})");
 				Messages.Message("MessagePlantDiedOfRot".Translate(_currentPlantDefToGrow?.label ?? "plant"), new TargetInfo(base.Position, Map, false), MessageTypeDefOf.NegativeEvent, true);
-				_curGrowth = 0f;
-				_plantAge = 0;
-				_numStoredPlants = 0;
-				_numStoredPlantsBuffer = 0;
-				_averageHarvestGrowth = 0f;
-				_currentPlantDefToGrow = GetPlantDefToGrow();
-				_bayStage = BayStage.Sowing;
-				_plantHealth = 0f;
+				ResetPlantStateForSowing(clearSpawnedPlants: false);
 				return;
 			}
 			
@@ -728,13 +722,7 @@ namespace HighDensityHydro
 			// if it is a multi harvest plant (eg ambrosia), reset buffer, set growth, and go to growing stage
 			if (plantDef.plant.harvestAfterGrowth == 0f)
 			{
-				_curGrowth = 0f;
-				_plantAge = 0;
-				_numStoredPlants = 0;
-				_numStoredPlantsBuffer = 0;
-				_averageHarvestGrowth = 0f;
-				_currentPlantDefToGrow = GetPlantDefToGrow();
-				_bayStage = BayStage.Sowing;
+				ResetPlantStateForSowing(clearSpawnedPlants: false);
 			}
 			else
 			{
@@ -752,12 +740,7 @@ namespace HighDensityHydro
 				
 				if (willDieBeforeNextHarvest)
 				{
-					_curGrowth = 0f;
-					_plantAge = 0;
-					_numStoredPlantsBuffer = 0;
-					_averageHarvestGrowth = 0f;
-					_currentPlantDefToGrow = GetPlantDefToGrow();
-					_bayStage = BayStage.Sowing;
+					ResetPlantStateForSowing(clearSpawnedPlants: false);
 					return;
 				}
 				
@@ -800,12 +783,25 @@ namespace HighDensityHydro
 		// Token: 0x0600015B RID: 347
 		private void KillAllPlantsAndReset()
 		{
+			ResetPlantStateForSowing(clearSpawnedPlants: true);
+		}
+		
+		private void ResetPlantStateForSowing(bool clearSpawnedPlants)
+		{
 			_bayStage = BayStage.Sowing;
 			_numStoredPlants = 0;
 			_numStoredPlantsBuffer = 0;
 			_plantAge = 0;
 			_curGrowth = 0f;
 			_averageHarvestGrowth = 0f;
+			_currentPlantDefToGrow = GetPlantDefToGrow();
+			_plantHealth = _currentPlantDefToGrow?.BaseMaxHitPoints ?? 100f;
+			
+			if (!clearSpawnedPlants || !base.Spawned)
+			{
+				return;
+			}
+			
 			foreach (Plant plant in PlantsOnMe.ToList<Plant>())
 			{
 				plant.Destroy(DestroyMode.Vanish);
