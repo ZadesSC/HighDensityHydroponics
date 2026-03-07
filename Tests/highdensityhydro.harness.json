@@ -1,0 +1,45 @@
+{
+  "name": "highdensityhydro",
+  "gameDirectory": "G:\\Games\\Steam\\steamapps\\common\\RimWorld",
+  "modUnderTestDirectory": "..",
+  "supportModDirectory": "..\\External\\ZadesRimWorldTestHarness\\mods\\ZadesRimWorldTestHarness",
+  "suiteModDirectory": ".\\Zades.HighDensityHydroponics.Tests",
+  "suiteProjectPath": ".\\Zades.HighDensityHydroponics.Tests\\Zades.HighDensityHydroponics.Tests.csproj",
+  "harmonyPath": "G:\\Games\\Steam\\steamapps\\workshop\\content\\294100\\1127530465\\1.6\\Assemblies\\0Harmony.dll",
+  "profileDirectory": ".\\artifacts\\profiles\\highdensityhydro",
+  "resultsDirectory": ".\\artifacts\\results\\highdensityhydro",
+  "stateDirectory": ".\\artifacts\\state\\highdensityhydro",
+  "buildConfiguration": "Release",
+  "windowWidth": 1920,
+  "windowHeight": 1080,
+  "staticSuites": [
+    "manifest",
+    "metadata",
+    "defs"
+  ],
+  "gameSuite": "HighDensityHydroponics",
+  "expectedPackageId": "mapleapple.highdensityhydroponics.fixed.zouhb.zades",
+  "requiredSupportedVersions": [
+    "1.6"
+  ],
+  "requiredDependencies": [
+    "brrainz.harmony"
+  ],
+  "requiredThingDefs": [
+    "HDH_Hydroponics_mini",
+    "HDH_Hydroponics",
+    "HDH_Hydroponics_Quantum"
+  ],
+  "enabledMods": [
+    "brrainz.harmony",
+    "ludeon.rimworld",
+    "ludeon.rimworld.royalty",
+    "ludeon.rimworld.ideology",
+    "ludeon.rimworld.biotech",
+    "ludeon.rimworld.anomaly",
+    "ludeon.rimworld.odyssey",
+    "mapleapple.highdensityhydroponics.fixed.zouhb.zades",
+    "zades.rimworld.testharness",
+    "zades.highdensityhydroponics.tests"
+  ]
+}

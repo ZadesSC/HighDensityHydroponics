@@ -45,3 +45,7 @@ Logs/
 *.zip
 *.rar
 *.7z
+
+# Harness outputs
+Tests/artifacts/
+Tests/*/Assemblies/
