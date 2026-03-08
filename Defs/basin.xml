@@ -43,7 +43,8 @@
 
     <ThingDef ParentName="HDH_Hydroponics_base">
         <defName>HDH_Hydroponics_mini</defName>
-        <label>basic density hydroponics bay</label>
+        <label>basic-density hydroponics bay</label>
+        <description>An entry-tier dense hydroponics bay that fits 16 plants into a 1x4 footprint, yielding roughly four times the growing area of ordinary planting in the same space. It provides its own grow light and nutrient flow, but it does not regulate temperature and a power loss will kill the crop.</description>
         <graphicData>
             <texPath>HDHBasins/HDHBasinBr</texPath>
             <graphicClass>Graphic_Multi</graphicClass>
@@ -81,6 +82,7 @@
     <ThingDef ParentName="HDH_Hydroponics_base">
         <defName>HDH_Hydroponics</defName>
         <label>high-density hydroponics bay</label>
+        <description>An industrial dense hydroponics bay that supports 80 plants in a 2x4 footprint, delivering roughly ten times the growing area of ordinary planting in the same space. Its integrated light and nutrient circulation keep the stack productive, but the unit still needs steady power and external temperature control.</description>
         <graphicData>
             <texPath>HDHBasins/HDHBasin</texPath>
             <graphicClass>Graphic_Multi</graphicClass>
@@ -119,7 +121,8 @@
     
     <ThingDef ParentName="HDH_Hydroponics_base">
         <defName>HDH_Hydroponics_Hyper</defName>
-        <label>hyper-density hydroponics bay</label>
+        <label>ultra-density hydroponics bay</label>
+        <description>An advanced ultra-dense hydroponics bay built for large indoor farms, packing 240 plants into a 2x6 footprint for roughly twenty times the growing area of ordinary planting in the same space. The stacked grow layers are extremely productive, but they require continuous power and careful climate management to avoid a total crop loss.</description>
         <graphicData>
             <texPath>HDHBasins/HDHBasinDr</texPath>
             <graphicClass>Graphic_Multi</graphicClass>
@@ -166,10 +169,11 @@
     
     <ThingDef ParentName="HDH_Hydroponics_base">
         <defName>HDH_Hydroponics_Quantum</defName>
-        <label>quantum density hydroponics bay</label>
+        <label>quantum-density hydroponics bay</label>
+        <description>A spacer-grade quantum hydroponics chamber that folds multiple grow layers into a compact 2x2 footprint. Its base capacity scales upward with available power, and the chamber ignores ordinary light, temperature, and atmosphere limits, turning energy supply into the main constraint on production.</description>
         <graphicData>
-            <texPath>HDHBasins/HDHBasinBr</texPath>
-            <graphicClass>Graphic_Multi</graphicClass>
+            <texPath>HDHBasins/HDHBasinQt</texPath>
+            <graphicClass>Graphic_Single</graphicClass>
             <drawSize>(2,2)</drawSize>
             <damageData>
                 <cornerTL>Damage/Corner</cornerTL>

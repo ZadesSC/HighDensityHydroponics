@@ -59,6 +59,7 @@ namespace HighDensityHydro
 		{
 		}
 		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
@@ -93,10 +94,11 @@ namespace HighDensityHydro
 				_basePowerIncrease = modExt.basePowerIncrease;
 				_capacityExponent = modExt.capacityExponent;
 				_maxPowerScalingLevel = modExt.maxPowerScalingLevel;
-				_plantsPerLayer = Math.Max(1, modExt.plantsPerLayer);
+				_plantsPerLayer = HydroCoreLogic.SanitizePlantsPerLayer(modExt.plantsPerLayer);
 			}
 		}
 		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void ExposeData()
 		{
 			base.ExposeData();
@@ -133,6 +135,7 @@ namespace HighDensityHydro
 			// }
 		}
 		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override string GetInspectString()
 		{
 			string text = base.GetInspectString();
@@ -164,6 +167,7 @@ namespace HighDensityHydro
 		}
 		
 		// Add dev gizmos
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
 			foreach (var g in base.GetGizmos())
@@ -213,6 +217,7 @@ namespace HighDensityHydro
 
 		// Tick rare should only handle sowing and harvesting stage to make it feel more responsible, should tick every
 		// ~4.1s at speed 1 (60tps)
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void TickRare()
 		{
 			_tickCounter += 250;
@@ -253,6 +258,7 @@ namespace HighDensityHydro
 		}
 		
 		// TickLong will simulate plant growth and other plant related data since vanilla also does this in tick long
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void TickLong()
 		{
 			//TODO: check if we need to call this
@@ -269,16 +275,30 @@ namespace HighDensityHydro
 					return;
 			}
 		}
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public new void SetPlantDefToGrow(ThingDef plantDef)
 		{
+			ThingDef previousPlantDef = GetPlantDefToGrow();
 			base.SetPlantDefToGrow(plantDef);
+
+			if (previousPlantDef == plantDef)
+			{
+				return;
+			}
+
+			if (_bayStage == BayStage.Sowing)
+			{
+				ResetPlantStateForSowing(clearSpawnedPlants: true);
+			}
 		}
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public new bool CanAcceptSowNow()
 		{
 			return base.CanAcceptSowNow() && _bayStage == BayStage.Sowing && _numStoredPlants < _plantCapacity;
 		}
 		
 		// used to draw progress bar
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
 		    base.DrawAt(drawLoc, flip);
@@ -323,6 +343,7 @@ namespace HighDensityHydro
 
 		//draw plants stuff
 		//TODO: clean up this code
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void Print(SectionLayer layer)
 		{
 			base.Print(layer);
@@ -469,6 +490,7 @@ namespace HighDensityHydro
 		//draw plants stuff
 		private static int[][][] rootList = new int[25][][];
 		//draw plants stuff
+			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 			static void PlantPosIndices()
 			{
 				for (int i = 0; i < 25; i++)
@@ -489,6 +511,7 @@ namespace HighDensityHydro
 		}
 		
 		//draw plants stuff
+			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 			private static int[] GetStablePositionIndices(ThingDef plant, Vector3 cell, int index)
 			{
 				int maxMeshCount = plant.plant.maxMeshCount;
@@ -508,6 +531,7 @@ namespace HighDensityHydro
 
 		// sowing logic, should allow sowing and once plants are sowed, the hydroponics will "store" them by deleting
 		// them and then adding them to the internal counter
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void HandleSowing()
 		{
 			if (_currentPlantDefToGrow == null || _currentPlantDefToGrow != GetPlantDefToGrow())
@@ -554,6 +578,7 @@ namespace HighDensityHydro
 		}
 
 		// call this only in tick long, logic in here assume per 2000tick intervals
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void HandleGrowing()
 		{
 			ThingDef plantDef = _currentPlantDefToGrow;
@@ -654,10 +679,7 @@ namespace HighDensityHydro
 					cellCount++;
 				}
 				_avgGlow = ((cellCount > 0) ? (totalGlow / cellCount) : 1f);
-				if (_avgGlow >= minGlow)
-				{
-					growthRateFromGlow = Mathf.Clamp01((_avgGlow - minGlow) / (optimalGlow - minGlow));
-				}
+				growthRateFromGlow = HydroCoreLogic.CalculateGlowGrowthRate(_avgGlow, minGlow, optimalGlow);
 			
 				if (growthRateFromGlow <= 0f)
 				{
@@ -672,8 +694,7 @@ namespace HighDensityHydro
 			// assume we are ticking in TickLong(), which we should
 			float growDays = _currentPlantDefToGrow.plant.growDays;
 			float fertilitySensitivity = _currentPlantDefToGrow.plant.fertilitySensitivity;
-			float growthPerTick = 1f / (60000f * growDays) * 2000f;
-			_curGrowth += fertilitySensitivity * _fertility * growthRateFromGlow * growthPerTick;
+			_curGrowth += HydroCoreLogic.CalculateGrowthDelta(fertilitySensitivity, _fertility, growthRateFromGlow, growDays);
 			_curGrowth = Mathf.Clamp01(_curGrowth);
 			if (_curGrowth >= 1f)
 			{
@@ -681,6 +702,7 @@ namespace HighDensityHydro
 			}
 		}
 
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void HandleHarvest()
 		{
 			// this keeps track of unharvested plants
@@ -726,53 +748,32 @@ namespace HighDensityHydro
 			if (_numStoredPlants != 0) return;
 			if (!allHarvested) return;
 			
-			// if it is a single harvest plant (eg rice), reset and go back to sowing stage
-			// if it is a multi harvest plant (eg ambrosia), reset buffer, set growth, and go to growing stage
-			if (plantDef.plant.harvestAfterGrowth == 0f)
+			var completion = HydroCoreLogic.ResolveHarvestCompletion(
+				plantDef.plant.harvestAfterGrowth,
+				_numStoredPlantsBuffer,
+				_averageHarvestGrowth,
+				_fertility,
+				plantDef.plant.fertilitySensitivity,
+				plantDef.plant.growDays,
+				_plantAge,
+				plantDef.plant.LifespanTicks);
+
+			if (completion.Action == HarvestCompletionAction.ResetToSowing)
 			{
 				ResetPlantStateForSowing(clearSpawnedPlants: false);
+				return;
 			}
-				else
-				{
-					if (_numStoredPlantsBuffer <= 0)
-					{
-						ResetPlantStateForSowing(clearSpawnedPlants: false);
-						return;
-					}
-					_averageHarvestGrowth /= (float)_numStoredPlantsBuffer;
-					
-					// Calculate estimated time to grow
-					// Assume optimal conditions and give a 5% fudge factor
-					// 0 case is ageless
-					float growthRemaining = 1f - _averageHarvestGrowth;
-					float growthPerTick = (plantDef.plant.fertilitySensitivity * _fertility) *
-					                      (2000f / (60000f * plantDef.plant.growDays));
-					if (growthPerTick <= 0f)
-					{
-						ResetPlantStateForSowing(clearSpawnedPlants: false);
-						return;
-					}
-					float estimatedTicksToGrow = Mathf.Max(0f, (growthRemaining / growthPerTick) * 2000f * 1.05f);
-					
-					int ageAfterNextGrow = _plantAge + (int)estimatedTicksToGrow;
-					bool willDieBeforeNextHarvest = plantDef.plant.LifespanTicks > 0 && ageAfterNextGrow > plantDef.plant.LifespanTicks;
-				
-				if (willDieBeforeNextHarvest)
-				{
-					ResetPlantStateForSowing(clearSpawnedPlants: false);
-					return;
-				}
-				
-				_numStoredPlants = _numStoredPlantsBuffer;
-				_numStoredPlantsBuffer = 0;
-				_curGrowth = _averageHarvestGrowth;
-				_averageHarvestGrowth = 0f;
-				_bayStage = BayStage.Growing;
-			}
+
+			_numStoredPlants = completion.StoredPlants;
+			_numStoredPlantsBuffer = completion.StoredPlantsBuffer;
+			_curGrowth = completion.Growth;
+			_averageHarvestGrowth = completion.AverageHarvestGrowth;
+			_bayStage = BayStage.Growing;
 		}
 
 		// Token: 0x17000014 RID: 20
 		// (get) Token: 0x06000139 RID: 313
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private new CompPowerTrader PowerComp
 		{
 			get
@@ -786,6 +787,7 @@ namespace HighDensityHydro
 		}
 
 		// Token: 0x06000142 RID: 322
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
 		{
 			// Check if we're being minified
@@ -800,11 +802,13 @@ namespace HighDensityHydro
 		}
 
 		// Token: 0x0600015B RID: 347
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void KillAllPlantsAndReset()
 		{
 			ResetPlantStateForSowing(clearSpawnedPlants: true);
 		}
 		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void ResetPlantStateForSowing(bool clearSpawnedPlants)
 		{
 			_bayStage = BayStage.Sowing;
@@ -827,6 +831,7 @@ namespace HighDensityHydro
 			}
 		}
 		
+			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 			public float PlantCurrentDyingDamagePerTick
 			{
 				get
@@ -836,10 +841,6 @@ namespace HighDensityHydro
 						return 0f;
 					}
 				float num = 0f;
-				if (_currentPlantDefToGrow.plant.LimitedLifespan && _plantAge > _currentPlantDefToGrow.plant.LifespanTicks)
-				{
-					num = Mathf.Max(num, 0.005f);
-				}
 				// TODO: add dying for no sunlight and dying exposed to light
 				// if (!_currentPlantDefToGrow.plant.diesToLight && _currentPlantDefToGrow.plant.dieIfNoSunlight && this.unlitTicks > 450000)
 				// {
@@ -850,10 +851,13 @@ namespace HighDensityHydro
 				// 	float lerpPct = _avgGlow;
 				// 	num = Mathf.Max(num, Plant.DyingDamagePerTickBecauseExposedToLight.LerpThroughRange(lerpPct));
 				// }
-					if (_requiresAtmosphereCheck && this.DyingBecauseExposedToVacuum)
-					{
-						num = Mathf.Max(num, 1f * base.Position.GetVacuum(base.Map));
-					}
+					num = HydroCoreLogic.CalculateDyingDamagePerTick(
+						_currentPlantDefToGrow.plant.LimitedLifespan,
+						_plantAge,
+						_currentPlantDefToGrow.plant.LifespanTicks,
+						_requiresAtmosphereCheck,
+						DyingBecauseExposedToVacuum,
+						base.Position.GetVacuum(base.Map));
 				// We don't track pollution or terrain
 				// if (this.DyingFromPollution || this.DyingFromNoPollution)
 				// {
@@ -867,10 +871,12 @@ namespace HighDensityHydro
 			}
 		}
 
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void PlantTakeDamage(float damage)
 		{
 			_plantHealth -= damage;
 		}
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private bool DyingBecauseExposedToLight
 		{
 			get
@@ -879,6 +885,7 @@ namespace HighDensityHydro
 			}
 		}
 
+			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 			private bool DyingBecauseExposedToVacuum
 			{
 				get
@@ -891,6 +898,7 @@ namespace HighDensityHydro
 				}
 			}
 		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private bool Dying
 		{
 			get
@@ -899,29 +907,21 @@ namespace HighDensityHydro
 			}
 		}
 
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public void AdjustCapacity(int scalingLevelOffset)
 		{
 			if (_powerCompCached == null)
 			{
 				return;
 			}
-			_currentPowerScalingLevel += scalingLevelOffset;
-			if (_currentPowerScalingLevel < 0)
-			{
-				_currentPowerScalingLevel = 0;
-			}
-			
-			if (_currentPowerScalingLevel > _maxPowerScalingLevel)
-			{
-				_currentPowerScalingLevel = _maxPowerScalingLevel;
-			}
+			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(_currentPowerScalingLevel, scalingLevelOffset, _maxPowerScalingLevel);
 			_powerCompCached.PowerOutput = -1 * CalculateCurrentPowerCost();
 			_plantCapacity = CalculateCurrentPlantCapacity();
 		}
 
 		public int CalculateCurrentPlantCapacity()
 		{
-			return _plantCapacityFromDef + _currentPowerScalingLevel * _plantsPerLayer;
+			return HydroCoreLogic.CalculateCapacity(_plantCapacityFromDef, _currentPowerScalingLevel, _plantsPerLayer);
 		}
 		
 		public float CalculateCurrentPowerCost()
@@ -934,7 +934,7 @@ namespace HighDensityHydro
 			if (power == null)
 				return 0f;
 			
-			return this.def.GetCompProperties<CompProperties_Power>().PowerConsumption + (_basePowerIncrease * Mathf.Pow(_capacityExponent, scalingLevel));
+			return HydroCoreLogic.CalculatePowerCost(this.def.GetCompProperties<CompProperties_Power>().PowerConsumption, _basePowerIncrease, _capacityExponent, scalingLevel);
 		}
 
 		public float CalculateNextPowerCostIncrease()
@@ -944,6 +944,7 @@ namespace HighDensityHydro
 		public int MaxPlantCapacity => _plantCapacity;
 		public int StoredPlantCount => _numStoredPlants;
 		public ThingDef CurrentPlantedDef => _currentPlantDefToGrow;
+		public ThingDef SelectedPlantDef => GetPlantDefToGrow();
 		public int PlantAge => _plantAge;
 		public float PlantHealth => _plantHealth;
 		public float Fertility => _fertility;

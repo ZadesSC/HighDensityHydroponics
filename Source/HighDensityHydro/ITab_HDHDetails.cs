@@ -1,10 +1,12 @@
 using HighDensityHydro;
+using System.Diagnostics.CodeAnalysis;
 using RimWorld;
 using UnityEngine;
 using Verse;
 
 namespace HighDensityHydro
 {
+    [ExcludeFromCodeCoverage]
     public class ITab_HDHDetails : ITab
     {
         public ITab_HDHDetails()
@@ -42,7 +44,8 @@ namespace HighDensityHydro
                 return;
             }
 
-            ThingDef currentPlant = building.CurrentPlantedDef; // Replace with your accessor
+            ThingDef selectedPlant = building.SelectedPlantDef;
+            ThingDef currentPlant = building.CurrentPlantedDef;
             int storedPlants = building.StoredPlantCount;
             int maxCapacity = building.MaxPlantCapacity;
 
@@ -73,15 +76,14 @@ namespace HighDensityHydro
             
             // ------------------- TOP: Plant Label --------------------
             Rect plantLabelBox = new Rect(mainRect.x, mainRect.y, mainRect.width, lineHeight);
-            string plantLabel = currentPlant != null ? (string)currentPlant.LabelCap : "None";
-            Widgets.Label(plantLabelBox.TopPartPixels(lineHeight), $"Currently Growing: {plantLabel}");
+            string plantLabel = selectedPlant != null ? (string)selectedPlant.LabelCap : "None";
+            Widgets.Label(plantLabelBox.TopPartPixels(lineHeight), $"Selected Plan: {plantLabel}");
             Widgets.DrawLineHorizontal(x: mainRect.x, y: mainRect.y + lineHeight, mainRect.width, Color.white);
 
             // ------------------- TOP LEFT: Plant icon --------------------
             Rect plantBox = new Rect(mainRect.x, mainRect.y + lineHeight + 5f, 120f, 100f);
-            //Widgets.Label(plantBox.TopPartPixels(lineHeight * 2f), $"Currently Growing: {currentPlant.LabelCap}");
-            if (currentPlant?.uiIcon != null)
-                Widgets.DefIcon(plantBox.BottomPartPixels(80f), currentPlant);
+            if (selectedPlant?.uiIcon != null)
+                Widgets.DefIcon(plantBox.BottomPartPixels(80f), selectedPlant);
 
             // ------------------- TOP RIGHT: Info --------------------
             Rect infoBox = new Rect(mainRect.x + 120f, mainRect.y + lineHeight + 5f, mainRect.width - 130f, lineHeight * 7);
@@ -89,7 +91,16 @@ namespace HighDensityHydro
             listing.Begin(infoBox);
             if (currentPlant == null)
             {
-                listing.Label("Currently Growing: None");
+                listing.Label("Current Batch: None");
+            }
+            else
+            {
+                listing.Label($"Current Batch: {currentPlant.LabelCap}");
+            }
+
+            if (selectedPlant != null && selectedPlant != currentPlant)
+            {
+                listing.Label($"Next Sowing Plan: {selectedPlant.LabelCap}");
             }
             listing.Label($"Stored Plants: {storedPlants} / {maxCapacity}");
             if (currentPlant == null)
