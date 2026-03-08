@@ -20,14 +20,17 @@ public sealed class HighDensityHydroSuiteProvider : IHarnessSuiteProvider
             new HdhQuantumConfigTest(),
             new HdhQuantumScalingTest(),
             new HdhPlantSelectionResetTest(),
+            new HdhSowingIgnoresIncompletePlantTest(),
             new HdhSowingToGrowingPhaseTest(),
             new HdhGrowingToHarvestPhaseTest(),
+            new HdhHarvestSpawnsStoredPlantsTest(),
             new HdhHarvestToSowingPhaseTest(),
             new HdhHarvestToGrowingRegrowthPhaseTest(),
             new HdhGrowingStageEmptyResetTest(),
             new HdhNoPowerDamageTest(),
             new HdhPowerGrowthGateTest(),
             new HdhSaveLoadPersistenceTest(),
+            new HdhDeSpawnResetTest(),
             new HdhDbhCompatibilityTest(),
         };
     }
@@ -221,6 +224,47 @@ internal sealed class HdhSowingToGrowingPhaseTest : IHarnessTestCase
     }
 }
 
+internal sealed class HdhSowingIgnoresIncompletePlantTest : IHarnessTestCase
+{
+    private Thing building;
+
+    public string Name => "hdh.sowing-ignore-incomplete";
+
+    public void Start(HarnessTestContext context)
+    {
+        HdhReflection.ClearAll(context.Map);
+        building = HdhReflection.SpawnBuilding("HDH_Hydroponics_Quantum", context.Map);
+        var plantDef = ThingDef.Named("Plant_Rice");
+        HdhReflection.SeedState(
+            building,
+            plantDef,
+            "Sowing",
+            powered: true,
+            storedPlants: 0,
+            growth: 0f,
+            age: 0,
+            health: plantDef.BaseMaxHitPoints,
+            storedPlantsBuffer: 0,
+            averageHarvestGrowth: 0f);
+        HdhReflection.SpawnPlantOnBuilding(building, plantDef, 0f, 0);
+    }
+
+    public HarnessTestStatus Tick(HarnessTestContext context, out string details, out string snapshotPath)
+    {
+        HdhReflection.TickRare(building);
+        snapshotPath = context.WriteSnapshot("hdh-sowing-ignore-incomplete", HdhReflection.SnapshotValues(building));
+
+        if (HdhReflection.StoredPlantCount(building) != 0 || HdhReflection.SpawnedPlantCount(building) != 1)
+        {
+            details = "Incomplete sowing plant should remain spawned and should not be counted as stored.";
+            return HarnessTestStatus.Failed;
+        }
+
+        details = "Incomplete sowing plant was ignored until it reached the growing life stage.";
+        return HarnessTestStatus.Passed;
+    }
+}
+
 internal sealed class HdhGrowingToHarvestPhaseTest : IHarnessTestCase
 {
     private Thing building;
@@ -294,6 +338,46 @@ internal sealed class HdhHarvestToSowingPhaseTest : IHarnessTestCase
         }
 
         details = "Single-harvest phase reset to " + stage + ".";
+        return HarnessTestStatus.Passed;
+    }
+}
+
+internal sealed class HdhHarvestSpawnsStoredPlantsTest : IHarnessTestCase
+{
+    private Thing building;
+
+    public string Name => "hdh.harvest-spawn-stored";
+
+    public void Start(HarnessTestContext context)
+    {
+        HdhReflection.ClearAll(context.Map);
+        building = HdhReflection.SpawnBuilding("HDH_Hydroponics_Quantum", context.Map);
+        var plantDef = ThingDef.Named("Plant_Rice");
+        HdhReflection.SeedState(
+            building,
+            plantDef,
+            "Harvest",
+            powered: true,
+            storedPlants: 2,
+            growth: 1f,
+            age: 2500,
+            health: plantDef.BaseMaxHitPoints,
+            storedPlantsBuffer: 0,
+            averageHarvestGrowth: 0f);
+    }
+
+    public HarnessTestStatus Tick(HarnessTestContext context, out string details, out string snapshotPath)
+    {
+        HdhReflection.TickRare(building);
+        snapshotPath = context.WriteSnapshot("hdh-harvest-spawn-stored", HdhReflection.SnapshotValues(building));
+
+        if (HdhReflection.StoredPlantCount(building) != 0 || HdhReflection.SpawnedPlantCount(building) != 2)
+        {
+            details = "Harvest phase did not spawn the stored plants into available cells.";
+            return HarnessTestStatus.Failed;
+        }
+
+        details = "Harvest phase spawned stored plants into the hydro footprint before waiting for collection.";
         return HarnessTestStatus.Passed;
     }
 }
@@ -617,5 +701,48 @@ internal sealed class HdhDbhCompatibilityTest : IHarnessTestCase
             ? "DBH active and HDH defs include injected plumbing/refuel behavior."
             : "DBH active but expected injected comps were not found.";
         return hasInjectedComp ? HarnessTestStatus.Passed : HarnessTestStatus.Failed;
+    }
+}
+
+internal sealed class HdhDeSpawnResetTest : IHarnessTestCase
+{
+    private Thing building;
+
+    public string Name => "hdh.despawn-reset";
+
+    public void Start(HarnessTestContext context)
+    {
+        HdhReflection.ClearAll(context.Map);
+        building = HdhReflection.SpawnBuilding("HDH_Hydroponics_Quantum", context.Map);
+        var plantDef = ThingDef.Named("Plant_Rice");
+        HdhReflection.SeedState(
+            building,
+            plantDef,
+            "Growing",
+            powered: true,
+            storedPlants: 3,
+            growth: 0.75f,
+            age: 3200,
+            health: 25f,
+            storedPlantsBuffer: 1,
+            averageHarvestGrowth: 0.2f);
+        HdhReflection.SpawnPlantOnBuilding(building, plantDef, 0.4f, 1000);
+        HdhReflection.DeSpawn(building);
+    }
+
+    public HarnessTestStatus Tick(HarnessTestContext context, out string details, out string snapshotPath)
+    {
+        snapshotPath = context.WriteSnapshot("hdh-despawn-reset", HdhReflection.SnapshotValues(building));
+
+        if (HdhReflection.StoredPlantCount(building) != 0 ||
+            Math.Abs(HdhReflection.PlantGrowth(building)) > 0.0001f ||
+            !string.Equals(HdhReflection.BayStageName(building), "Sowing", StringComparison.Ordinal))
+        {
+            details = "Vanish de-spawn should clear stored state and reset the hydro back to sowing.";
+            return HarnessTestStatus.Failed;
+        }
+
+        details = "Vanish de-spawn cleared internal state before the building left the map.";
+        return HarnessTestStatus.Passed;
     }
 }

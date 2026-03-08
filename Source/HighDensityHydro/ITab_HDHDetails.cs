@@ -1,4 +1,3 @@
-using HighDensityHydro;
 using System.Diagnostics.CodeAnalysis;
 using RimWorld;
 using UnityEngine;
@@ -11,33 +10,24 @@ namespace HighDensityHydro
     {
         public ITab_HDHDetails()
         {
-            this.size = new Vector2(400f, 400f);
-            this.labelKey = "Hydroponics";
+            size = new Vector2(400f, 400f);
+            labelKey = "HDH_ITabLabel";
         }
 
         protected override void FillTab()
         {
-            // Draw and cleanup
             Rect mainRect = new Rect(0f, 0f, size.x, size.y).ContractedBy(10f);
             Text.Anchor = TextAnchor.UpperLeft;
-            
-            // Get all the values 
+
             Building_HighDensityHydro building = SelThing as Building_HighDensityHydro;
             if (building == null)
             {
-                Widgets.Label(mainRect, "Not a valid HDH building.");
+                Widgets.Label(mainRect, "HDH_ITabInvalidBuilding".Translate());
                 return;
             }
 
-            if (!building.PowerScalesCapacity)
-            {
-                this.size.y = 250;
-            }
-            else
-            {
-                this.size.y = 400f;
-            }
-            
+            size.y = building.PowerScalesCapacity ? 400f : 250f;
+
             var power = building.GetComp<CompPowerTrader>();
             if (power == null)
             {
@@ -48,11 +38,12 @@ namespace HighDensityHydro
             ThingDef currentPlant = building.CurrentPlantedDef;
             int storedPlants = building.StoredPlantCount;
             int maxCapacity = building.MaxPlantCapacity;
+            string noneLabel = "HDH_None".Translate().ToString();
 
             float lightLevel = 1f;
             if (building.RequiresLightCheck)
             {
-                lightLevel = building.LastAverageGlow; // approximate
+                lightLevel = building.LastAverageGlow;
             }
 
             float temperature = -500f;
@@ -61,128 +52,124 @@ namespace HighDensityHydro
                 temperature = building.Position.GetTemperature(building.Map);
             }
 
-
             float vacuum = 0f;
             if (building.RequiresAtmosphereCheck)
             {
                 vacuum = building.Position.GetVacuum(building.Map);
             }
-            
-            //bool growingSeason = GenTemperature.SeasonAndOutdoorTempAcceptableForGrower(building, building.Map);
-            
-            float currentPower = -power.PowerOutput; // positive W
 
+            float currentPower = -power.PowerOutput;
             float lineHeight = 24f;
-            
-            // ------------------- TOP: Plant Label --------------------
-            Rect plantLabelBox = new Rect(mainRect.x, mainRect.y, mainRect.width, lineHeight);
-            string plantLabel = selectedPlant != null ? (string)selectedPlant.LabelCap : "None";
-            Widgets.Label(plantLabelBox.TopPartPixels(lineHeight), $"Selected Plan: {plantLabel}");
-            Widgets.DrawLineHorizontal(x: mainRect.x, y: mainRect.y + lineHeight, mainRect.width, Color.white);
 
-            // ------------------- TOP LEFT: Plant icon --------------------
+            Rect plantLabelBox = new Rect(mainRect.x, mainRect.y, mainRect.width, lineHeight);
+            string plantLabel = selectedPlant != null ? selectedPlant.LabelCap : noneLabel;
+            Widgets.Label(plantLabelBox.TopPartPixels(lineHeight), "HDH_ITabSelectedPlant".Translate(plantLabel));
+            Widgets.DrawLineHorizontal(mainRect.x, mainRect.y + lineHeight, mainRect.width, Color.white);
+
             Rect plantBox = new Rect(mainRect.x, mainRect.y + lineHeight + 5f, 120f, 100f);
             if (selectedPlant?.uiIcon != null)
+            {
                 Widgets.DefIcon(plantBox.BottomPartPixels(80f), selectedPlant);
+            }
 
-            // ------------------- TOP RIGHT: Info --------------------
             Rect infoBox = new Rect(mainRect.x + 120f, mainRect.y + lineHeight + 5f, mainRect.width - 130f, lineHeight * 7);
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(infoBox);
-            if (currentPlant == null)
-            {
-                listing.Label("Current Batch: None");
-            }
-            else
-            {
-                listing.Label($"Current Batch: {currentPlant.LabelCap}");
-            }
+            listing.Label("HDH_ITabCurrentBatch".Translate(currentPlant != null ? currentPlant.LabelCap : noneLabel));
 
             if (selectedPlant != null && selectedPlant != currentPlant)
             {
-                listing.Label($"Next Sowing Plan: {selectedPlant.LabelCap}");
+                listing.Label("HDH_ITabNextSowingPlant".Translate(selectedPlant.LabelCap));
             }
-            listing.Label($"Stored Plants: {storedPlants} / {maxCapacity}");
+
+            listing.Label("HDH_ITabStoredPlants".Translate(storedPlants, maxCapacity));
+
             if (currentPlant == null)
             {
-                listing.Label("Plant Health: N/A");
+                listing.Label("HDH_ITabPlantHealthNA".Translate());
             }
             else
             {
-                listing.Label($"Plant Health: {building.PlantHealth:F0} / {currentPlant.BaseMaxHitPoints}");
+                listing.Label("HDH_ITabPlantHealth".Translate(building.PlantHealth.ToString("F0"), currentPlant.BaseMaxHitPoints));
             }
-            listing.Label($"Growth: {building.PlantGrowth:P0}");
-            listing.Label($"Fertility: {building.Fertility:P0}");
-            if (lightLevel < 0)
+
+            listing.Label("HDH_ITabGrowth".Translate(building.PlantGrowth.ToString("P0")));
+            listing.Label("HDH_ITabFertility".Translate(building.Fertility.ToString("P0")));
+
+            if (lightLevel < 0f)
             {
-                listing.Label($"Light: N/A");
+                listing.Label("HDH_ITabLightNA".Translate());
             }
             else
             {
-                listing.Label($"Light: {lightLevel:P0}");
+                listing.Label("HDH_ITabLight".Translate(lightLevel.ToString("P0")));
             }
-            
+
             if (!building.RequiresTemperatureCheck || Mathf.Approximately(temperature, -500f))
             {
-                listing.Label($"Temp: N/A");
+                listing.Label("HDH_ITabTemperatureNA".Translate());
             }
             else
             {
-                listing.Label($"Temp: {temperature:F1}°C");
+                listing.Label("HDH_ITabTemperature".Translate(temperature.ToString("F1")));
             }
-            
+
             if (!building.RequiresAtmosphereCheck)
             {
-                listing.Label($"Vacuum: N/A");
+                listing.Label("HDH_ITabVacuumNA".Translate());
             }
             else
             {
-                listing.Label($"Vacuum: {vacuum:P0}");
+                listing.Label("HDH_ITabVacuum".Translate(vacuum.ToString("P0")));
             }
-            
-            //listing.Label($"Growing Season: N/A");
+
             listing.End();
 
-            // ------------------- BOTTOM: Power usage + controls --------------------
-            
-            Widgets.DrawLineHorizontal(x: mainRect.x, y: infoBox.y + lineHeight * 7, mainRect.width, Color.white);
-            
-            Rect powerBox = new Rect(mainRect.x, infoBox.y + lineHeight * 7 + 5, mainRect.width, lineHeight);
-            Widgets.Label(powerBox, $"Current Power Usage: {currentPower:F0}W");
-            
-            
-            // power and density scaling
+            Widgets.DrawLineHorizontal(mainRect.x, infoBox.y + lineHeight * 7, mainRect.width, Color.white);
+
+            Rect powerBox = new Rect(mainRect.x, infoBox.y + lineHeight * 7 + 5f, mainRect.width, lineHeight);
+            Widgets.Label(powerBox, "HDH_ITabCurrentPowerUsage".Translate(currentPower.ToString("F0")));
+
             if (!building.PowerScalesCapacity)
             {
                 return;
             }
+
             Rect powerDescBox = new Rect(powerBox.x, powerBox.y + lineHeight + 5f, powerBox.width, lineHeight * 2);
-            Widgets.Label(powerDescBox, $"Increase or decrease density of this hydroponics.\nEach increase increases capacity by {building.PlantsPerLayer}.");
+            Widgets.Label(powerDescBox, "HDH_ITabPowerScalingDescription".Translate(building.PlantsPerLayer));
 
             Rect controlBox = new Rect(mainRect.x, powerBox.y + (lineHeight * 3) + 5f, mainRect.width, lineHeight);
             float btnWidth = 40f;
 
             Rect left5 = controlBox.LeftPartPixels(btnWidth);
             if (Widgets.ButtonText(left5, "-5"))
+            {
                 building.AdjustCapacity(-5);
+            }
 
             Rect left1 = new Rect(left5.xMax + 5f, left5.y, btnWidth, left5.height);
             if (Widgets.ButtonText(left1, "-1"))
+            {
                 building.AdjustCapacity(-1);
+            }
 
             Rect right5 = controlBox.RightPartPixels(btnWidth);
             if (Widgets.ButtonText(right5, "+5"))
-                building.AdjustCapacity(+5);
+            {
+                building.AdjustCapacity(5);
+            }
 
             Rect right1 = new Rect(right5.x - btnWidth - 5f, right5.y, btnWidth, right5.height);
             if (Widgets.ButtonText(right1, "+1"))
-                building.AdjustCapacity(+1);
-            
+            {
+                building.AdjustCapacity(1);
+            }
+
             Rect powerCostBox = new Rect(controlBox.x + controlBox.width / 2f - 80f, controlBox.y, 160f, lineHeight * 3);
-            Widgets.Label(powerCostBox, $"Next increase increases power consumption by {building.CalculateNextPowerCostIncrease():F0}W");
-            
-            Rect scalingLevelBox = new Rect(controlBox.x, controlBox.y + lineHeight * 3, controlBox.width, lineHeight * 2);
-            Widgets.Label(scalingLevelBox, $"Current density level: {building.CurrentPowerScalingLevel:F0}");
+            Widgets.Label(powerCostBox, "HDH_ITabNextPowerIncrease".Translate(building.CalculateNextPowerCostIncrease().ToString("F0")));
+
+            Rect scalingLevelBox = new Rect(controlBox.x, controlBox.y + lineHeight * 3f, controlBox.width, lineHeight * 2f);
+            Widgets.Label(scalingLevelBox, "HDH_ITabCurrentDensityLevel".Translate(building.CurrentPowerScalingLevel));
         }
 
         public override bool IsVisible => SelThing is Building_HighDensityHydro;

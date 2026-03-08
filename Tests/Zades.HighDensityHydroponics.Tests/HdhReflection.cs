@@ -118,6 +118,12 @@ internal static class HdhReflection
         tickRareMethod.Invoke(building, null);
     }
 
+    public static void DeSpawn(Thing building)
+    {
+        EnsureInitialized();
+        building.DeSpawn(DestroyMode.Vanish);
+    }
+
     public static void AdjustCapacity(Thing building, int offset)
     {
         EnsureInitialized();

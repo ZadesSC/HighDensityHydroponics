@@ -1,9 +1,11 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using UnityEngine;
 using Verse;
 
 namespace HighDensityHydro
 {
+    [ExcludeFromCodeCoverage]
     [StaticConstructorOnStartup]
     public static class HDH_Graphics
     {

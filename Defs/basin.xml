@@ -183,6 +183,7 @@
             </damageData>
         </graphicData>
         <size>(2,2)</size>
+        <defaultPlacingRot>North</defaultPlacingRot>
         <statBases>
             <WorkToBuild>7600</WorkToBuild>
             <MaxHitPoints>180</MaxHitPoints>

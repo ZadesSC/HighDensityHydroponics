@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
@@ -7,6 +8,7 @@ using Verse;
 
 namespace HighDensityHydro
 {
+    [ExcludeFromCodeCoverage]
     public class HDH_Settings : ModSettings
     {
         public bool lightRequirement;
@@ -21,6 +23,7 @@ namespace HighDensityHydro
             base.ExposeData();
         }
     }
+    [ExcludeFromCodeCoverage]
     public class HDH_Mod : Mod
     {
         public static HDH_Settings settings;
@@ -35,7 +38,7 @@ namespace HighDensityHydro
 
         public override string SettingsCategory()
         {
-            return "High Density Hydroponics";
+            return "HDH_SettingsCategory".Translate();
         }
 
         public override void DoSettingsWindowContents(Rect inRect)

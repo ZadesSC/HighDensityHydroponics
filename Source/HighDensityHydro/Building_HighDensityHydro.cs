@@ -144,8 +144,8 @@ namespace HighDensityHydro
 
 			if (this._numStoredPlants > 0)
 			{
-				// "{PlantLabel}: {GrowthPercent}%"
-				text += "\n" + _currentPlantDefToGrow.LabelCap + ": " + string.Format("{0:#0}%", this._curGrowth * 100f);
+				string plantLabel = _currentPlantDefToGrow?.LabelCap ?? "HDH_GenericPlantLabel".Translate().ToString();
+				text += "\n" + "HDH_CurrentPlantGrowth".Translate(plantLabel, string.Format("{0:#0}%", this._curGrowth * 100f));
 
 				if (HDH_Mod.settings.lightRequirement && this._avgGlow >= 0f)
 				{
@@ -177,7 +177,7 @@ namespace HighDensityHydro
 			{
 				yield return new Command_Action
 				{
-					defaultLabel = "Dev: Increase Growth by 10%",
+					defaultLabel = "HDH_DevIncreaseGrowth".Translate(),
 					action = delegate()
 					{
 						_curGrowth += 0.1f;
@@ -187,7 +187,7 @@ namespace HighDensityHydro
 				
 				yield return new Command_Action
 				{
-					defaultLabel = "Dev: Set Growth to 100%",
+					defaultLabel = "HDH_DevSetGrowthMax".Translate(),
 					action = delegate()
 					{
 						_curGrowth = 1f;
@@ -197,7 +197,7 @@ namespace HighDensityHydro
 
 				yield return new Command_Action
 				{
-					defaultLabel = "Dev: Increase Age by 1 day",
+					defaultLabel = "HDH_DevIncreaseAge".Translate(),
 					action = delegate()
 					{
 						_plantAge += 60000;
@@ -625,7 +625,7 @@ namespace HighDensityHydro
 				{
 					key = "MessagePlantDiedOfRot";
 				}
-				Messages.Message(key.Translate(_currentPlantDefToGrow?.label ?? "plant"), new TargetInfo(base.Position, this.Map, false), MessageTypeDefOf.NegativeEvent, true);
+				Messages.Message(key.Translate(_currentPlantDefToGrow?.label ?? "HDH_GenericPlantLabel".Translate().ToString()), new TargetInfo(base.Position, this.Map, false), MessageTypeDefOf.NegativeEvent, true);
 				ResetPlantStateForSowing(clearSpawnedPlants: false);
 				return;
 			}
@@ -638,7 +638,7 @@ namespace HighDensityHydro
 			if (plantDef.plant.LifespanTicks > 0 && _plantAge > plantDef.plant.LifespanTicks)
 			{
 				//Log.Message($"[HDH] Plant died of old age at {_plantAge} ticks (lifespan: {_currentPlantDefToGrow.plant.LifespanTicks})");
-				Messages.Message("MessagePlantDiedOfRot".Translate(_currentPlantDefToGrow?.label ?? "plant"), new TargetInfo(base.Position, Map, false), MessageTypeDefOf.NegativeEvent, true);
+				Messages.Message("MessagePlantDiedOfRot".Translate(_currentPlantDefToGrow?.label ?? "HDH_GenericPlantLabel".Translate().ToString()), new TargetInfo(base.Position, Map, false), MessageTypeDefOf.NegativeEvent, true);
 				ResetPlantStateForSowing(clearSpawnedPlants: false);
 				return;
 			}

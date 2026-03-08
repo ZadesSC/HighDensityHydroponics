@@ -64,6 +64,7 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Include="Building_HighDensityHydro.cs" />
+        <Compile Include="HydroCoreLogic.cs" />
         <Compile Include="ITab_HDHDetails.cs" />
         <Compile Include="Patch_Command_SetPlantToGrow.cs" />
         <Compile Include="DBHHydroPatch.cs" />

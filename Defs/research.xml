@@ -1,8 +1,8 @@
 <Defs>
   <ResearchProjectDef>
     <defName>HDH_BasicDensity</defName>
-    <label>basic density hydroponics</label>
-    <description>Basic techniques for increasing plant growth density in an artificial mini-biome, allowing the ability to grow four times the crops in the same amount of space. A first step toward denser farming.</description>
+    <label>basic-density hydroponics</label>
+    <description>Develops the first generation of dense, multi-layer hydroponic infrastructure. Unlocks the basic-density hydroponics bay, a compact 1x4 basin that supports 16 plants for roughly four times the growing area in the same footprint.</description>
     <baseCost>400</baseCost>
     <techLevel>Industrial</techLevel>
     <prerequisites>
@@ -15,7 +15,7 @@
   <ResearchProjectDef>
     <defName>HDH_HighDensity</defName>
     <label>high-density hydroponics</label>
-    <description>Techniques for increasing plant growth density in an artificial mini-biome, allowing the ability to grow ten times the crops in the same amount of space.</description>
+    <description>Refines tray stacking, nutrient circulation, and lighting control for industrial dense farming. Unlocks the high-density hydroponics bay, a 2x4 basin that supports 80 plants for roughly ten times the growing area in the same footprint.</description>
     <baseCost>800</baseCost>
     <techLevel>Industrial</techLevel>
     <prerequisites>
@@ -28,7 +28,7 @@
   <ResearchProjectDef>
     <defName>HDH_HighDensity_Ultra</defName>
     <label>ultra-density hydroponics</label>
-    <description>Techniques for further increasing plant growth density in an artificial mini-biome, allowing the ability to grow twenty times the crops in the same amount of space.</description>
+    <description>Pushes dense hydroponic engineering into advanced materials and large-scale environmental support. Unlocks the ultra-density hydroponics bay, a 2x6 basin that supports 240 plants for roughly twenty times the growing area in the same footprint.</description>
     <baseCost>2000</baseCost>
     <techLevel>Industrial</techLevel>
     <prerequisites>
@@ -41,8 +41,8 @@
   
   <ResearchProjectDef>
     <defName>HDH_HighDensity_Quantum</defName>
-    <label>quantum density hydroponics</label>
-    <description>By leveraging quantum entanglement, crop density can now be scaled dynamically with available power. The future of farming is measured in energy, not space.</description>
+    <label>quantum-density hydroponics</label>
+    <description>Applies quantum field manipulation to collapse multiple growth layers into a single compact chamber. Unlocks the quantum-density hydroponics bay, a 2x2 spacer-grade basin whose capacity scales with power and which ignores normal light, temperature, and atmosphere limits.</description>
     <baseCost>8000</baseCost>
     <techLevel>Spacer</techLevel>
     <prerequisites>

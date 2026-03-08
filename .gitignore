@@ -49,3 +49,6 @@ Logs/
 # Harness outputs
 Tests/artifacts/
 Tests/*/Assemblies/
+
+# SDK build symbols
+Assemblies/*.pdb
