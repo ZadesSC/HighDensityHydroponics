@@ -133,6 +133,36 @@ namespace HighDensityHydro.UnitTests
             Assert.Same(rice, building.CurrentPlantedDef);
         }
 
+        [Fact]
+        public void CanAcceptSowNow_IgnoresVanillaTemperatureGateWhenDisabled()
+        {
+            var building = new Building_HighDensityHydro();
+            var plant = CreatePlantDef(0f);
+
+            SetField(building, "_bayStage", Enum.Parse(typeof(Building_HighDensityHydro).GetNestedType("BayStage", BindingFlags.NonPublic), "Sowing"));
+            SetField(building, "_numStoredPlants", 0);
+            SetField(building, "_plantCapacity", 4);
+            SetField(building, "_requiresTemperatureCheck", false);
+            SetSelectedPlantDef(building, plant);
+
+            Assert.True(building.CanAcceptSowNow());
+        }
+
+        [Fact]
+        public void CanAcceptSowNow_DelegatesToVanillaGateWhenTemperatureChecksRemainEnabled()
+        {
+            var building = new Building_HighDensityHydro();
+            var plant = CreatePlantDef(0f);
+
+            SetField(building, "_bayStage", Enum.Parse(typeof(Building_HighDensityHydro).GetNestedType("BayStage", BindingFlags.NonPublic), "Sowing"));
+            SetField(building, "_numStoredPlants", 0);
+            SetField(building, "_plantCapacity", 4);
+            SetField(building, "_requiresTemperatureCheck", true);
+            SetSelectedPlantDef(building, plant);
+
+            Assert.Equal(((Building_PlantGrower)building).CanAcceptSowNow(), building.CanAcceptSowNow());
+        }
+
         private static ThingDef CreateHydroDef()
         {
             var power = new CompProperties_Power

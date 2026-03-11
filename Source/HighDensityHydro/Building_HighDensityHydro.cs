@@ -294,7 +294,22 @@ namespace HighDensityHydro
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public new bool CanAcceptSowNow()
 		{
-			return base.CanAcceptSowNow() && _bayStage == BayStage.Sowing && _numStoredPlants < _plantCapacity;
+			if (_bayStage != BayStage.Sowing || _numStoredPlants >= _plantCapacity)
+			{
+				return false;
+			}
+
+			if (_requiresTemperatureCheck)
+			{
+				return base.CanAcceptSowNow();
+			}
+
+			if (PowerComp != null && !PowerComp.PowerOn)
+			{
+				return false;
+			}
+
+			return GetPlantDefToGrow() != null;
 		}
 		
 		// used to draw progress bar
