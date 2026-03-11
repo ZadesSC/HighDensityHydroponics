@@ -11,11 +11,14 @@
     <HDH_NumStoredPlants>储存植物：{0}</HDH_NumStoredPlants>
     <HDH_AverageLight>平均光照：{0}</HDH_AverageLight>
     <HDH_CurrentPlantGrowth>{0}：{1}</HDH_CurrentPlantGrowth>
+    <HDH_DebugUnlitTicks>调试：未受光照刻数：{0}</HDH_DebugUnlitTicks>
     <HDH_GenericPlantLabel>植物</HDH_GenericPlantLabel>
 
     <HDH_DevIncreaseGrowth>开发：生长提高10%</HDH_DevIncreaseGrowth>
     <HDH_DevSetGrowthMax>开发：将生长设为100%</HDH_DevSetGrowthMax>
     <HDH_DevIncreaseAge>开发：年龄增加1天</HDH_DevIncreaseAge>
+    <HDH_ResetHydroponics>重置水培槽</HDH_ResetHydroponics>
+    <HDH_ResetHydroponicsDesc>清除所有已储存的生长进度，并移除这台水培槽上当前的所有植物。</HDH_ResetHydroponicsDesc>
 
     <HDH_ITabInvalidBuilding>所选目标不是有效的HDH建筑。</HDH_ITabInvalidBuilding>
     <HDH_ITabLabel>水培</HDH_ITabLabel>
