@@ -63,13 +63,30 @@ namespace HighDensityHydro.UnitTests
         [Fact]
         public void CalculateDyingDamagePerTick_PicksWorstApplicableDamage()
         {
-            var lifespanOnly = HydroCoreLogic.CalculateDyingDamagePerTick(true, 1001, 1000, false, false, 0f);
-            var vacuumOnly = HydroCoreLogic.CalculateDyingDamagePerTick(false, 0, 0, true, true, 0.75f);
-            var combined = HydroCoreLogic.CalculateDyingDamagePerTick(true, 1001, 1000, true, true, 0.75f);
+            var lifespanOnly = HydroCoreLogic.CalculateDyingDamagePerTick(true, 1001, 1000, false, 0, false, false, 0f);
+            var vacuumOnly = HydroCoreLogic.CalculateDyingDamagePerTick(false, 0, 0, false, 0, true, true, 0.75f);
+            var combined = HydroCoreLogic.CalculateDyingDamagePerTick(true, 1001, 1000, true, 450001, true, true, 0.75f);
 
             Assert.Equal(0.005f, lifespanOnly, 3);
             Assert.Equal(0.75f, vacuumOnly, 3);
             Assert.Equal(0.75f, combined, 3);
+        }
+
+        [Fact]
+        public void CalculateDyingDamagePerTick_AddsNoSunlightDamageAfterThreshold()
+        {
+            var darknessOnly = HydroCoreLogic.CalculateDyingDamagePerTick(false, 0, 0, true, 450001, false, false, 0f);
+
+            Assert.Equal(0.005f, darknessOnly, 3);
+        }
+
+        [Fact]
+        public void UpdateUnlitTicks_AccumulatesOnlyWhenLightChecksAreActiveAndInsufficient()
+        {
+            Assert.Equal(2000, HydroCoreLogic.UpdateUnlitTicks(true, true, 0f, 0, 2000));
+            Assert.Equal(0, HydroCoreLogic.UpdateUnlitTicks(true, true, 0.25f, 4000, 2000));
+            Assert.Equal(0, HydroCoreLogic.UpdateUnlitTicks(false, true, 0f, 4000, 2000));
+            Assert.Equal(0, HydroCoreLogic.UpdateUnlitTicks(true, false, 0f, 4000, 2000));
         }
 
         [Fact]

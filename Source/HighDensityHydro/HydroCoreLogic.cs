@@ -33,6 +33,8 @@ namespace HighDensityHydro
 
     internal static class HydroCoreLogic
     {
+        private const int NoSunlightDamageThresholdTicks = 450000;
+
         public static int SanitizePlantsPerLayer(int plantsPerLayer)
         {
             return Math.Max(1, plantsPerLayer);
@@ -90,10 +92,33 @@ namespace HighDensityHydro
             return fertilitySensitivity * fertility * growthRateFromGlow * baseGrowthPerLongTick;
         }
 
-        public static float CalculateDyingDamagePerTick(bool limitedLifespan, int plantAge, int lifespanTicks, bool requiresAtmosphereCheck, bool exposedToVacuum, float vacuumAmount)
+        public static int UpdateUnlitTicks(bool lightRequirementEnabled, bool requiresLightCheck, float growthRateFromGlow, int currentUnlitTicks, int tickInterval)
+        {
+            if (!lightRequirementEnabled || !requiresLightCheck || growthRateFromGlow > 0f)
+            {
+                return 0;
+            }
+
+            return currentUnlitTicks + Math.Max(0, tickInterval);
+        }
+
+        public static float CalculateDyingDamagePerTick(
+            bool limitedLifespan,
+            int plantAge,
+            int lifespanTicks,
+            bool diesWithoutSunlight,
+            int unlitTicks,
+            bool requiresAtmosphereCheck,
+            bool exposedToVacuum,
+            float vacuumAmount)
         {
             var damage = 0f;
             if (limitedLifespan && plantAge > lifespanTicks)
+            {
+                damage = Mathf.Max(damage, 0.005f);
+            }
+
+            if (diesWithoutSunlight && unlitTicks > NoSunlightDamageThresholdTicks)
             {
                 damage = Mathf.Max(damage, 0.005f);
             }

@@ -2,7 +2,7 @@
   <ResearchProjectDef>
     <defName>HDH_BasicDensity</defName>
     <label>basic-density hydroponics</label>
-    <description>Develops the first generation of dense, multi-layer hydroponic infrastructure. Unlocks the basic-density hydroponics bay, a compact 1x4 basin that supports 16 plants for roughly four times the growing area in the same footprint.</description>
+    <description>Develops the first generation of dense, multi-layer hydroponic infrastructure. Unlocks the basic-density hydroponics bay, a compact 1x4 basin that supports 16 plants for roughly four times the growing area in the same footprint while still relying on sunlight for growth.</description>
     <baseCost>400</baseCost>
     <techLevel>Industrial</techLevel>
     <prerequisites>
@@ -15,7 +15,7 @@
   <ResearchProjectDef>
     <defName>HDH_HighDensity</defName>
     <label>high-density hydroponics</label>
-    <description>Refines tray stacking, nutrient circulation, and lighting control for industrial dense farming. Unlocks the high-density hydroponics bay, a 2x4 basin that supports 80 plants for roughly ten times the growing area in the same footprint.</description>
+    <description>Refines tray stacking, nutrient circulation, and lighting control for industrial dense farming. Unlocks the high-density hydroponics bay, a 2x4 basin that supports 80 plants for roughly ten times the growing area in the same footprint while still relying on sunlight for growth.</description>
     <baseCost>800</baseCost>
     <techLevel>Industrial</techLevel>
     <prerequisites>
@@ -28,7 +28,7 @@
   <ResearchProjectDef>
     <defName>HDH_HighDensity_Ultra</defName>
     <label>ultra-density hydroponics</label>
-    <description>Pushes dense hydroponic engineering into advanced materials and large-scale environmental support. Unlocks the ultra-density hydroponics bay, a 2x6 basin that supports 240 plants for roughly twenty times the growing area in the same footprint.</description>
+    <description>Pushes dense hydroponic engineering into advanced materials and large-scale environmental support. Unlocks the ultra-density hydroponics bay, a 2x6 basin that supports 240 plants for roughly twenty times the growing area in the same footprint while still relying on sunlight for growth.</description>
     <baseCost>2000</baseCost>
     <techLevel>Industrial</techLevel>
     <prerequisites>
@@ -42,7 +42,7 @@
   <ResearchProjectDef>
     <defName>HDH_HighDensity_Quantum</defName>
     <label>quantum-density hydroponics</label>
-    <description>Applies quantum field manipulation to collapse multiple growth layers into a single compact chamber. Unlocks the quantum-density hydroponics bay, a 2x2 spacer-grade basin whose capacity scales with power and which ignores normal light, temperature, and atmosphere limits.</description>
+    <description>Applies quantum field manipulation to collapse multiple growth layers into a single compact chamber. Unlocks the quantum-density hydroponics bay, a 2x2 spacer-grade basin whose capacity scales with power and which always ignores normal light, temperature, and atmosphere limits.</description>
     <baseCost>8000</baseCost>
     <techLevel>Spacer</techLevel>
     <prerequisites>

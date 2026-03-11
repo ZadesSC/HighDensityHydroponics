@@ -43,6 +43,7 @@ namespace HighDensityHydro
 		private float _fertility = 2.8f; // default
 		private float _curGrowth = 0;
 		private float _avgGlow;
+		private int _unlitTicks = 0;
 		private float _averageHarvestGrowth = 0f; // this keeps track of average growth of plants that can be harvested multiple times
 		private bool _requiresLightCheck = true;
 		private bool _requiresTemperatureCheck = true;
@@ -108,6 +109,7 @@ namespace HighDensityHydro
 			Scribe_Values.Look<int>(ref this._numStoredPlantsBuffer, "storedPlantsBuffer", 0, false);
 			Scribe_Values.Look<int>(ref this._plantAge, "plantAge", 0, false);
 			Scribe_Values.Look<float>(ref this._curGrowth, "growth", 0f, false);
+			Scribe_Values.Look<int>(ref this._unlitTicks, "unlitTicks", 0, false);
 			Scribe_Values.Look<float>(ref this._averageHarvestGrowth, "averageHarvestGrowth", 0f, false);
 			Scribe_Defs.Look(ref _currentPlantDefToGrow, "queuedPlantDefToGrow");
 			Scribe_Values.Look<int>(ref this._plantCapacity, "plantCapacity", 0, false);
@@ -139,6 +141,11 @@ namespace HighDensityHydro
 		public override string GetInspectString()
 		{
 			string text = base.GetInspectString();
+			if (!_requiresTemperatureCheck)
+			{
+				text = RemoveInspectLine(text, "CannotGrowBadSeasonTemperature".Translate().ToString());
+				text = RemoveInspectLine(text, "GrowSeasonHereNow".Translate().ToString());
+			}
 
 			text += "\n" + "HDH_NumStoredPlants".Translate(_numStoredPlants + _numStoredPlantsBuffer);
 
@@ -164,6 +171,20 @@ namespace HighDensityHydro
 			// }
 
 			return text;
+		}
+
+		private static string RemoveInspectLine(string text, string lineToRemove)
+		{
+			if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(lineToRemove))
+			{
+				return text;
+			}
+
+			var lines = text
+				.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
+				.Where(line => !string.Equals(line, lineToRemove, StringComparison.Ordinal));
+
+			return string.Join("\n", lines);
 		}
 		
 		// Add dev gizmos
@@ -660,6 +681,29 @@ namespace HighDensityHydro
 			
 			
 			_avgGlow = -1f;
+			float growthRateFromGlow = 1f;
+			if (HDH_Mod.settings.lightRequirement && _requiresLightCheck)
+			{
+				float minGlow = plantDef.plant.growMinGlow;
+				float optimalGlow = plantDef.plant.growOptimalGlow;
+				float totalGlow = 0f;
+				int cellCount = 0;
+				foreach (IntVec3 cell in this.OccupiedRect().Cells)
+				{
+					totalGlow += Map.glowGrid.GroundGlowAt(cell, false, false);
+					cellCount++;
+				}
+
+				_avgGlow = ((cellCount > 0) ? (totalGlow / cellCount) : 1f);
+				growthRateFromGlow = HydroCoreLogic.CalculateGlowGrowthRate(_avgGlow, minGlow, optimalGlow);
+			}
+
+			_unlitTicks = HydroCoreLogic.UpdateUnlitTicks(
+				HDH_Mod.settings.lightRequirement,
+				_requiresLightCheck,
+				growthRateFromGlow,
+				_unlitTicks,
+				2000);
 			
 			if (PowerComp != null && !PowerComp.PowerOn)
 			{
@@ -681,21 +725,8 @@ namespace HighDensityHydro
 			//TODO: check for vacuum as well
 			//TODO: check and track unlit ticks for rotting plants
 			
-			float growthRateFromGlow = 0f;
 			if (HDH_Mod.settings.lightRequirement && _requiresLightCheck)
 			{
-				float minGlow = plantDef.plant.growMinGlow;
-				float optimalGlow = plantDef.plant.growOptimalGlow;
-				float totalGlow = 0f;
-				int cellCount = 0;
-				foreach (IntVec3 cell in this.OccupiedRect().Cells)
-				{
-					totalGlow += Map.glowGrid.GroundGlowAt(cell, false, false);
-					cellCount++;
-				}
-				_avgGlow = ((cellCount > 0) ? (totalGlow / cellCount) : 1f);
-				growthRateFromGlow = HydroCoreLogic.CalculateGlowGrowthRate(_avgGlow, minGlow, optimalGlow);
-			
 				if (growthRateFromGlow <= 0f)
 				{
 					return;
@@ -830,6 +861,7 @@ namespace HighDensityHydro
 			_numStoredPlants = 0;
 			_numStoredPlantsBuffer = 0;
 			_plantAge = 0;
+			_unlitTicks = 0;
 			_curGrowth = 0f;
 			_averageHarvestGrowth = 0f;
 			_currentPlantDefToGrow = GetPlantDefToGrow();
@@ -870,6 +902,11 @@ namespace HighDensityHydro
 						_currentPlantDefToGrow.plant.LimitedLifespan,
 						_plantAge,
 						_currentPlantDefToGrow.plant.LifespanTicks,
+						!_currentPlantDefToGrow.plant.diesToLight &&
+						_currentPlantDefToGrow.plant.dieIfNoSunlight &&
+						HDH_Mod.settings.lightRequirement &&
+						_requiresLightCheck,
+						_unlitTicks,
 						_requiresAtmosphereCheck,
 						DyingBecauseExposedToVacuum,
 						base.Position.GetVacuum(base.Map));
