@@ -120,7 +120,7 @@ internal sealed class HdhQuantumConfigTest : IHarnessTestCase
         var plantsPerLayer = HdhReflection.PlantsPerLayer(building);
         var capacity = HdhReflection.MaxPlantCapacity(building);
 
-        if (requiresLight || requiresTemperature || requiresAtmosphere || !powerScales || plantsPerLayer != 4 || capacity != 4)
+        if (requiresLight || requiresTemperature || !requiresAtmosphere || !powerScales || plantsPerLayer != 4 || capacity != 4)
         {
             details = "Quantum config flags/capacity do not match branch expectations.";
             return HarnessTestStatus.Failed;

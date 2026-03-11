@@ -206,15 +206,14 @@ namespace HighDensityHydro
 					}
 				};
 				
-				yield return new Command_Action
-				{
-					defaultLabel = "HDH_DevSetGrowthMax".Translate(),
-					action = delegate()
+					yield return new Command_Action
 					{
-						_curGrowth = 1f;
-						_numStoredPlants = _plantCapacity;
-					}
-				};
+						defaultLabel = "HDH_DevSetGrowthMax".Translate(),
+						action = delegate()
+						{
+							ForceHarvestReadyForDev();
+						}
+					};
 
 				yield return new Command_Action
 				{
@@ -232,8 +231,20 @@ namespace HighDensityHydro
 				// 	{
 				// 		_numStoredPlants = 0;
 				// 	}
-				// };
+					// };
+				}
 			}
+
+		private void ForceHarvestReadyForDev()
+		{
+			_curGrowth = 1f;
+			_numStoredPlants = _plantCapacity;
+			if (_currentPlantDefToGrow == null)
+			{
+				_currentPlantDefToGrow = GetPlantDefToGrow();
+			}
+
+			_bayStage = BayStage.Harvest;
 		}
 
 		// Tick rare should only handle sowing and harvesting stage to make it feel more responsible, should tick every

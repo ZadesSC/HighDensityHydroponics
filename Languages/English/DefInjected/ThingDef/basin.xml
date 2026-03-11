@@ -10,5 +10,5 @@
     <HDH_Hydroponics_Hyper.description>An advanced ultra-dense hydroponics bay built for large indoor farms, packing 240 plants into a 2x6 footprint for roughly twenty times the growing area of ordinary planting in the same space. The stacked grow layers are extremely productive, but they still rely on sunlight and require continuous power and careful climate management to avoid a total crop loss.</HDH_Hydroponics_Hyper.description>
 
     <HDH_Hydroponics_Quantum.label>quantum-density hydroponics bay</HDH_Hydroponics_Quantum.label>
-    <HDH_Hydroponics_Quantum.description>A spacer-grade quantum hydroponics chamber that folds multiple grow layers into a compact 2x2 footprint. Its base capacity scales upward with available power, and the chamber always ignores ordinary light, temperature, and atmosphere limits, turning energy supply into the main constraint on production.</HDH_Hydroponics_Quantum.description>
+    <HDH_Hydroponics_Quantum.description>A spacer-grade quantum hydroponics chamber that folds multiple grow layers into a compact 2x2 footprint. Its base capacity scales upward with available power, and the chamber ignores ordinary light and temperature limits, turning energy supply into the main constraint on production.</HDH_Hydroponics_Quantum.description>
 </LanguageData>

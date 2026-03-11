@@ -163,6 +163,23 @@ namespace HighDensityHydro.UnitTests
             Assert.Equal(((Building_PlantGrower)building).CanAcceptSowNow(), building.CanAcceptSowNow());
         }
 
+        [Fact]
+        public void ForceHarvestReadyForDev_SetsGrowthStoredPlantsAndHarvestStage()
+        {
+            var building = new Building_HighDensityHydro();
+            var plant = CreatePlantDef(0f);
+
+            SetField(building, "_plantCapacity", 4);
+            SetSelectedPlantDef(building, plant);
+
+            InvokeNonPublic(building, "ForceHarvestReadyForDev");
+
+            Assert.Equal(1f, building.PlantGrowth, 3);
+            Assert.Equal(4, building.StoredPlantCount);
+            Assert.Equal("Harvest", GetField<object>(building, "_bayStage").ToString());
+            Assert.Same(plant, building.CurrentPlantedDef);
+        }
+
         private static ThingDef CreateHydroDef()
         {
             var power = new CompProperties_Power

@@ -170,7 +170,7 @@
     <ThingDef ParentName="HDH_Hydroponics_base">
         <defName>HDH_Hydroponics_Quantum</defName>
         <label>quantum-density hydroponics bay</label>
-        <description>A spacer-grade quantum hydroponics chamber that folds multiple grow layers into a compact 2x2 footprint. Its base capacity scales upward with available power, and the chamber always ignores ordinary light, temperature, and atmosphere limits, turning energy supply into the main constraint on production.</description>
+        <description>A spacer-grade quantum hydroponics chamber that folds multiple grow layers into a compact 2x2 footprint. Its base capacity scales upward with available power, and the chamber ignores ordinary light and temperature limits, turning energy supply into the main constraint on production.</description>
         <graphicData>
             <texPath>HDHBasins/HDHBasinQt</texPath>
             <graphicClass>Graphic_Single</graphicClass>
@@ -215,7 +215,7 @@
                 <capacity>4</capacity>
                 <requiresLightCheck>false</requiresLightCheck>
                 <requiresTemperatureCheck>false</requiresTemperatureCheck>
-                <requiresAtmosphereCheck>false</requiresAtmosphereCheck>
+                <requiresAtmosphereCheck>true</requiresAtmosphereCheck>
                 <powerScalesCapacity>true</powerScalesCapacity>
                 <basePowerIncrease>50</basePowerIncrease>
                 <capacityExponent>1.15</capacityExponent>

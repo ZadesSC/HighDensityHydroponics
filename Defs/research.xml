@@ -42,7 +42,7 @@
   <ResearchProjectDef>
     <defName>HDH_HighDensity_Quantum</defName>
     <label>quantum-density hydroponics</label>
-    <description>Applies quantum field manipulation to collapse multiple growth layers into a single compact chamber. Unlocks the quantum-density hydroponics bay, a 2x2 spacer-grade basin whose capacity scales with power and which always ignores normal light, temperature, and atmosphere limits.</description>
+    <description>Applies quantum field manipulation to collapse multiple growth layers into a single compact chamber. Unlocks the quantum-density hydroponics bay, a 2x2 spacer-grade basin whose capacity scales with power and which ignores normal light and temperature limits.</description>
     <baseCost>8000</baseCost>
     <techLevel>Spacer</techLevel>
     <prerequisites>
