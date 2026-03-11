@@ -24,7 +24,6 @@ internal static class HdhReflection
     private static MethodInfo tickRareMethod;
     private static MethodInfo adjustCapacityMethod;
     private static MethodInfo calculateCurrentPowerCostMethod;
-    private static MethodInfo setPlantDefToGrowMethod;
     private static PropertyInfo maxPlantCapacityProperty;
     private static PropertyInfo plantGrowthProperty;
     private static PropertyInfo plantHealthProperty;
@@ -223,7 +222,7 @@ internal static class HdhReflection
     public static void SetPlantDefToGrow(Thing building, ThingDef plantDef)
     {
         EnsureInitialized();
-        setPlantDefToGrowMethod.Invoke(building, new object[] { plantDef });
+        ((IPlantToGrowSettable)building).SetPlantDefToGrow(plantDef);
     }
 
     public static Plant SpawnPlantOnBuilding(Thing building, ThingDef plantDef, float growth, int age = 0)
@@ -331,7 +330,6 @@ internal static class HdhReflection
         tickRareMethod = buildingType.GetMethod("TickRare", BindingFlags.Instance | BindingFlags.Public);
         adjustCapacityMethod = buildingType.GetMethod("AdjustCapacity", BindingFlags.Instance | BindingFlags.Public);
         calculateCurrentPowerCostMethod = buildingType.GetMethod("CalculateCurrentPowerCost", BindingFlags.Instance | BindingFlags.Public);
-        setPlantDefToGrowMethod = buildingType.GetMethod("SetPlantDefToGrow", BindingFlags.Instance | BindingFlags.Public);
         maxPlantCapacityProperty = buildingType.GetProperty("MaxPlantCapacity", BindingFlags.Instance | BindingFlags.Public);
         plantGrowthProperty = buildingType.GetProperty("PlantGrowth", BindingFlags.Instance | BindingFlags.Public);
         plantHealthProperty = buildingType.GetProperty("PlantHealth", BindingFlags.Instance | BindingFlags.Public);

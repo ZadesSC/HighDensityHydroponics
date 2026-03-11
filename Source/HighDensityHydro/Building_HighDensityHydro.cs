@@ -361,12 +361,23 @@ namespace HighDensityHydro
 
 					HandleInternalPlantLifecycleTick(resetWhenEmpty: false);
 					return;
-				default:
-					return;
+					default:
+						return;
 			}
 		}
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		void IPlantToGrowSettable.SetPlantDefToGrow(ThingDef plantDef)
+		{
+			SetPlantDefToGrowInternal(plantDef);
+		}
+
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public new void SetPlantDefToGrow(ThingDef plantDef)
+		{
+			SetPlantDefToGrowInternal(plantDef);
+		}
+
+		private void SetPlantDefToGrowInternal(ThingDef plantDef)
 		{
 			ThingDef previousPlantDef = GetPlantDefToGrow();
 			base.SetPlantDefToGrow(plantDef);
@@ -382,7 +393,18 @@ namespace HighDensityHydro
 			}
 		}
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		bool IPlantToGrowSettable.CanAcceptSowNow()
+		{
+			return CanAcceptSowNowInternal();
+		}
+
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public new bool CanAcceptSowNow()
+		{
+			return CanAcceptSowNowInternal();
+		}
+
+		private bool CanAcceptSowNowInternal()
 		{
 			if (_bayStage != BayStage.Sowing || _numStoredPlants >= _plantCapacity)
 			{

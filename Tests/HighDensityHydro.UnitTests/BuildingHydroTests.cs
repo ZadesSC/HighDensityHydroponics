@@ -147,7 +147,7 @@ namespace HighDensityHydro.UnitTests
             SetField(building, "_requiresTemperatureCheck", false);
             SetSelectedPlantDef(building, plant);
 
-            Assert.True(building.CanAcceptSowNow());
+            Assert.True(((IPlantToGrowSettable)building).CanAcceptSowNow());
         }
 
         [Fact]
@@ -162,7 +162,33 @@ namespace HighDensityHydro.UnitTests
             SetField(building, "_requiresTemperatureCheck", true);
             SetSelectedPlantDef(building, plant);
 
-            Assert.Equal(((Building_PlantGrower)building).CanAcceptSowNow(), building.CanAcceptSowNow());
+            Assert.Equal(((Building_PlantGrower)building).CanAcceptSowNow(), ((IPlantToGrowSettable)building).CanAcceptSowNow());
+        }
+
+        [Fact]
+        public void SetPlantDefToGrow_ThroughInterface_ResetsSowingState()
+        {
+            var building = new Building_HighDensityHydro();
+            var rice = CreatePlantDef(0f);
+
+            SetField(building, "_bayStage", Enum.Parse(typeof(Building_HighDensityHydro).GetNestedType("BayStage", BindingFlags.NonPublic), "Sowing"));
+            SetField(building, "_numStoredPlants", 3);
+            SetField(building, "_numStoredPlantsBuffer", 2);
+            SetField(building, "_plantAge", 6000);
+            SetField(building, "_curGrowth", 0.25f);
+            SetField(building, "_averageHarvestGrowth", 0.4f);
+            SetField(building, "_currentPlantDefToGrow", rice);
+            SetSelectedPlantDef(building, rice);
+
+            ((IPlantToGrowSettable)building).SetPlantDefToGrow(null);
+
+            Assert.Equal(0, building.StoredPlantCount);
+            Assert.Equal(0, GetField<int>(building, "_numStoredPlantsBuffer"));
+            Assert.Equal(0, building.PlantAge);
+            Assert.Equal(0f, building.PlantGrowth, 3);
+            Assert.Equal(0f, GetField<float>(building, "_averageHarvestGrowth"), 3);
+            Assert.Equal("Sowing", GetField<object>(building, "_bayStage").ToString());
+            Assert.Null(building.CurrentPlantedDef);
         }
 
         [Fact]
