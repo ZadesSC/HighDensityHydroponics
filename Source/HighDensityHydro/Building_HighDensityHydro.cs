@@ -11,6 +11,9 @@ namespace HighDensityHydro
 {
 	public class Building_HighDensityHydro : Building_PlantGrower, IPlantToGrowSettable
 	{
+		private static Texture2D _resetHydroponicsIcon;
+		private static Texture2D ResetHydroponicsIcon => _resetHydroponicsIcon ??= ContentFinder<Texture2D>.Get("UI/Commands/ResetHydroponics");
+
 		// for graphics drawing
 		private Dictionary<IntVec3, Matrix4x4> _drawMatrixCache = new Dictionary<IntVec3, Matrix4x4>();
 		private Vector2 _barsize;
@@ -209,6 +212,7 @@ namespace HighDensityHydro
 			{
 				defaultLabel = "HDH_ResetHydroponics".Translate(),
 				defaultDesc = "HDH_ResetHydroponicsDesc".Translate(),
+				icon = ResetHydroponicsIcon,
 				action = delegate()
 				{
 					KillAllPlantsAndReset();
