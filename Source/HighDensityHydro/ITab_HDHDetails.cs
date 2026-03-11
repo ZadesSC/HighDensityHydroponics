@@ -40,11 +40,7 @@ namespace HighDensityHydro
             int maxCapacity = building.MaxPlantCapacity;
             string noneLabel = "HDH_None".Translate().ToString();
 
-            float lightLevel = 1f;
-            if (building.RequiresLightCheck)
-            {
-                lightLevel = building.LastAverageGlow;
-            }
+            float lightLevel = building.LastAverageGlow;
 
             float temperature = -500f;
             if (building.RequiresTemperatureCheck)
@@ -72,7 +68,8 @@ namespace HighDensityHydro
                 Widgets.DefIcon(plantBox.BottomPartPixels(80f), selectedPlant);
             }
 
-            Rect infoBox = new Rect(mainRect.x + 120f, mainRect.y + lineHeight + 5f, mainRect.width - 130f, lineHeight * 7);
+            int infoLineCount = building.RequiresLightCheck ? 7 : 6;
+            Rect infoBox = new Rect(mainRect.x + 120f, mainRect.y + lineHeight + 5f, mainRect.width - 130f, lineHeight * infoLineCount);
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(infoBox);
             listing.Label("HDH_ITabCurrentBatch".Translate(currentPlant != null ? currentPlant.LabelCap : noneLabel));
@@ -96,13 +93,16 @@ namespace HighDensityHydro
             listing.Label("HDH_ITabGrowth".Translate(building.PlantGrowth.ToString("P0")));
             listing.Label("HDH_ITabFertility".Translate(building.Fertility.ToString("P0")));
 
-            if (lightLevel < 0f)
+            if (building.RequiresLightCheck)
             {
-                listing.Label("HDH_ITabLightNA".Translate());
-            }
-            else
-            {
-                listing.Label("HDH_ITabLight".Translate(lightLevel.ToString("P0")));
+                if (lightLevel < 0f)
+                {
+                    listing.Label("HDH_ITabLightNA".Translate());
+                }
+                else
+                {
+                    listing.Label("HDH_ITabLight".Translate(lightLevel.ToString("P0")));
+                }
             }
 
             if (!building.RequiresTemperatureCheck || Mathf.Approximately(temperature, -500f))
@@ -125,9 +125,9 @@ namespace HighDensityHydro
 
             listing.End();
 
-            Widgets.DrawLineHorizontal(mainRect.x, infoBox.y + lineHeight * 7, mainRect.width, Color.white);
+            Widgets.DrawLineHorizontal(mainRect.x, infoBox.y + lineHeight * infoLineCount, mainRect.width, Color.white);
 
-            Rect powerBox = new Rect(mainRect.x, infoBox.y + lineHeight * 7 + 5f, mainRect.width, lineHeight);
+            Rect powerBox = new Rect(mainRect.x, infoBox.y + lineHeight * infoLineCount + 5f, mainRect.width, lineHeight);
             Widgets.Label(powerBox, "HDH_ITabCurrentPowerUsage".Translate(currentPower.ToString("F0")));
 
             if (!building.PowerScalesCapacity)

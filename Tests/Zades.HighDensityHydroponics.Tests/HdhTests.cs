@@ -28,6 +28,7 @@ public sealed class HighDensityHydroSuiteProvider : IHarnessSuiteProvider
             new HdhHarvestToGrowingRegrowthPhaseTest(),
             new HdhGrowingStageEmptyResetTest(),
             new HdhNoPowerDamageTest(),
+            new HdhHarvestNoPowerDamageTest(),
             new HdhPowerGrowthGateTest(),
             new HdhSaveLoadPersistenceTest(),
             new HdhDeSpawnResetTest(),
@@ -486,7 +487,6 @@ internal sealed class HdhNoPowerDamageTest : IHarnessTestCase
 {
     private Thing building;
     private float baselineHealth;
-    private bool originalSetting;
 
     public string Name => "hdh.no-power-damage";
 
@@ -503,11 +503,9 @@ internal sealed class HdhNoPowerDamageTest : IHarnessTestCase
             storedPlants: 4,
             growth: 0.30f,
             age: 1000,
-            health: 5f,
+            health: 12f,
             storedPlantsBuffer: 0,
             averageHarvestGrowth: 0f);
-        originalSetting = HdhReflection.KillPlantsOnNoPowerSetting();
-        HdhReflection.SetKillPlantsOnNoPowerSetting(true);
         baselineHealth = HdhReflection.PlantHealth(building);
     }
 
@@ -516,15 +514,57 @@ internal sealed class HdhNoPowerDamageTest : IHarnessTestCase
         HdhReflection.TickLong(building);
         var currentHealth = HdhReflection.PlantHealth(building);
         snapshotPath = context.WriteSnapshot("hdh-no-power-damage", HdhReflection.SnapshotValues(building));
-        HdhReflection.SetKillPlantsOnNoPowerSetting(originalSetting);
 
-        if (!(currentHealth < baselineHealth) || !string.Equals(HdhReflection.BayStageName(building), "Growing", StringComparison.Ordinal))
+        if (Math.Abs(currentHealth - 4f) > 0.05f || !string.Equals(HdhReflection.BayStageName(building), "Growing", StringComparison.Ordinal))
         {
-            details = "Expected powered-off growing plants to take damage without immediately leaving growing stage.";
+            details = "Expected powered-off growing plants to take exactly 8 damage during a long tick while remaining in growing stage.";
             return HarnessTestStatus.Failed;
         }
 
         details = "Powered-off growing plants took damage: " + baselineHealth.ToString("F1") + " -> " + currentHealth.ToString("F1");
+        return HarnessTestStatus.Passed;
+    }
+}
+
+internal sealed class HdhHarvestNoPowerDamageTest : IHarnessTestCase
+{
+    private Thing building;
+    private float baselineHealth;
+
+    public string Name => "hdh.harvest-no-power-damage";
+
+    public void Start(HarnessTestContext context)
+    {
+        HdhReflection.ClearAll(context.Map);
+        building = HdhReflection.SpawnBuilding("HDH_Hydroponics_Quantum", context.Map);
+        var plantDef = ThingDef.Named("Plant_Rice");
+        HdhReflection.SeedState(
+            building,
+            plantDef,
+            "Harvest",
+            powered: false,
+            storedPlants: 1,
+            growth: 1f,
+            age: 1000,
+            health: 12f,
+            storedPlantsBuffer: 0,
+            averageHarvestGrowth: 0f);
+        baselineHealth = HdhReflection.PlantHealth(building);
+    }
+
+    public HarnessTestStatus Tick(HarnessTestContext context, out string details, out string snapshotPath)
+    {
+        HdhReflection.TickRare(building);
+        var currentHealth = HdhReflection.PlantHealth(building);
+        snapshotPath = context.WriteSnapshot("hdh-harvest-no-power-damage", HdhReflection.SnapshotValues(building));
+
+        if (Math.Abs(currentHealth - 11f) > 0.05f || !string.Equals(HdhReflection.BayStageName(building), "Harvest", StringComparison.Ordinal))
+        {
+            details = "Expected powered-off harvest plants to take exactly 1 damage during a rare tick while remaining in harvest stage.";
+            return HarnessTestStatus.Failed;
+        }
+
+        details = "Powered-off harvest plants took damage: " + baselineHealth.ToString("F1") + " -> " + currentHealth.ToString("F1");
         return HarnessTestStatus.Passed;
     }
 }

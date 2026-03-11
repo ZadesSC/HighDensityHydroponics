@@ -34,8 +34,6 @@ internal static class HdhReflection
     private static PropertyInfo powerScalesCapacityProperty;
     private static PropertyInfo plantsPerLayerProperty;
     private static PropertyInfo currentPowerScalingLevelProperty;
-    private static FieldInfo settingsField;
-    private static FieldInfo killPlantsOnNoPowerField;
 
     public static Thing SpawnBuilding(string defName, Map map)
     {
@@ -257,25 +255,6 @@ internal static class HdhReflection
             .Count();
     }
 
-    public static bool KillPlantsOnNoPowerSetting()
-    {
-        EnsureInitialized();
-        var settings = settingsField?.GetValue(null);
-        if (settings == null || killPlantsOnNoPowerField == null)
-        {
-            return false;
-        }
-
-        return (bool)killPlantsOnNoPowerField.GetValue(settings);
-    }
-
-    public static void SetKillPlantsOnNoPowerSetting(bool value)
-    {
-        EnsureInitialized();
-        var settings = settingsField?.GetValue(null);
-        killPlantsOnNoPowerField?.SetValue(settings, value);
-    }
-
     public static Dictionary<string, string> SnapshotValues(Thing building)
     {
         return new Dictionary<string, string>
@@ -341,14 +320,6 @@ internal static class HdhReflection
         plantsPerLayerProperty = buildingType.GetProperty("PlantsPerLayer", BindingFlags.Instance | BindingFlags.Public);
         currentPowerScalingLevelProperty = buildingType.GetProperty("CurrentPowerScalingLevel", BindingFlags.Instance | BindingFlags.Public);
 
-        var modType = AppDomain.CurrentDomain.GetAssemblies()
-            .Select(assembly => assembly.GetType("HighDensityHydro.HDH_Mod", false))
-            .FirstOrDefault(type => type != null);
-        var settingsType = AppDomain.CurrentDomain.GetAssemblies()
-            .Select(assembly => assembly.GetType("HighDensityHydro.HDH_Settings", false))
-            .FirstOrDefault(type => type != null);
-        settingsField = modType?.GetField("settings", BindingFlags.Static | BindingFlags.Public);
-        killPlantsOnNoPowerField = settingsType?.GetField("killPlantsOnNoPower", BindingFlags.Instance | BindingFlags.Public);
     }
 
     private static void SetBayStage(object building, string name)

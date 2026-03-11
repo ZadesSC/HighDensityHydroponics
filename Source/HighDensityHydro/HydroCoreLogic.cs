@@ -89,7 +89,12 @@ namespace HighDensityHydro
             }
 
             var baseGrowthPerLongTick = (1f / (60000f * growDays)) * 2000f;
-            return fertilitySensitivity * fertility * growthRateFromGlow * baseGrowthPerLongTick;
+            return CalculateFertilityGrowthRateFactor(fertilitySensitivity, fertility) * growthRateFromGlow * baseGrowthPerLongTick;
+        }
+
+        public static float CalculateFertilityGrowthRateFactor(float fertilitySensitivity, float fertility)
+        {
+            return fertility * fertilitySensitivity + (1f - fertilitySensitivity);
         }
 
         public static int UpdateUnlitTicks(bool lightRequirementEnabled, bool requiresLightCheck, float growthRateFromGlow, int currentUnlitTicks, int tickInterval)
@@ -149,7 +154,7 @@ namespace HighDensityHydro
             averageHarvestGrowth /= storedPlantsBuffer;
 
             var growthRemaining = 1f - averageHarvestGrowth;
-            var growthPerTick = (fertilitySensitivity * fertility) * (2000f / (60000f * growDays));
+            var growthPerTick = CalculateFertilityGrowthRateFactor(fertilitySensitivity, fertility) * (2000f / (60000f * growDays));
             if (growthPerTick <= 0f)
             {
                 return new HarvestCompletionResult(HarvestCompletionAction.ResetToSowing, 0, 0, 0f, 0f);
@@ -179,6 +184,16 @@ namespace HighDensityHydro
         public static float CalculateDbhFuelUse(int storedPlantCount)
         {
             return 0.05f * Math.Max(0, storedPlantCount);
+        }
+
+        public static float CalculateVanillaPowerLossDamage(int tickInterval, int rareTickInterval = 250)
+        {
+            if (tickInterval <= 0 || rareTickInterval <= 0)
+            {
+                return 0f;
+            }
+
+            return tickInterval / rareTickInterval;
         }
     }
 }

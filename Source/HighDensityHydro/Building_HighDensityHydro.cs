@@ -28,11 +28,12 @@ namespace HighDensityHydro
 		}
 		
 		// hydroponic stuff
+		private const int RareTickInterval = 250;
+		private const int LongTickInterval = 2000;
 		private int _tickCounter = 0;
 		IEnumerable<IntVec3> IPlantToGrowSettable.Cells => this.OccupiedRect().Cells;
 		private Building_HighDensityHydro.BayStage _bayStage;
 		private CompPowerTrader _powerCompCached;
-		private bool _wasPoweredLastTick = true;
 
 		// plant stuff
 		// I should make a custom plant class or struct
@@ -298,21 +299,16 @@ namespace HighDensityHydro
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void TickRare()
 		{
-			_tickCounter += 250;
+			_tickCounter += RareTickInterval;
 			//Log.Message($"[HDH] Tick: storedPlants={storedPlants}, growth={growth}, stage={bayStage}");
 			
 			//TODO: check if we need to call this
 			//base.TickRare();
-			
-			bool poweredNow = this.PowerComp == null || this.PowerComp.PowerOn;
-			// if (HDH_Mod.settings.killPlantsOnNoPower)
-			// {
-			// 	if (this._wasPoweredLastTick && !poweredNow)
-			// 	{
-			// 		this.KillAllPlantsAndReset();
-			// 	}
-			// }
-			this._wasPoweredLastTick = poweredNow;
+			ApplyVanillaPowerLossDamageToSpawnedPlants(RareTickInterval);
+			if (_bayStage != BayStage.Growing)
+			{
+				ApplyVanillaPowerLossDamageToStoredPlants(RareTickInterval);
+			}
 			
 			switch (_bayStage)
 			{
@@ -328,7 +324,7 @@ namespace HighDensityHydro
 				return;
 			}
 
-			if (_tickCounter >= 2000)
+			if (_tickCounter >= LongTickInterval)
 			{
 				_tickCounter = 0;
 				TickLong();
@@ -345,6 +341,7 @@ namespace HighDensityHydro
 			switch (_bayStage)
 			{
 				case BayStage.Growing:
+					ApplyVanillaPowerLossDamageToStoredPlants(LongTickInterval);
 					if (HandleInternalPlantLifecycleTick(resetWhenEmpty: true))
 					{
 						return;
@@ -361,8 +358,8 @@ namespace HighDensityHydro
 
 					HandleInternalPlantLifecycleTick(resetWhenEmpty: false);
 					return;
-					default:
-						return;
+				default:
+					return;
 			}
 		}
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -944,13 +941,8 @@ namespace HighDensityHydro
 				_numStoredPlants = _plantCapacity;
 			}
 
-			float dyingDamage = PlantCurrentDyingDamagePerTick * 2000f;
+			float dyingDamage = PlantCurrentDyingDamagePerTick * LongTickInterval;
 			PlantTakeDamage(dyingDamage);
-
-			if (_powerCompCached != null && !_powerCompCached.PowerOn && HDH_Mod.settings.killPlantsOnNoPower)
-			{
-				PlantTakeDamage(1f);
-			}
 
 			if (_plantHealth <= 0)
 			{
@@ -962,7 +954,7 @@ namespace HighDensityHydro
 				return true;
 			}
 
-			_plantAge += 2000;
+			_plantAge += LongTickInterval;
 			if (plantDef.plant.LifespanTicks > 0 && _plantAge > plantDef.plant.LifespanTicks)
 			{
 				Messages.Message("MessagePlantDiedOfRot".Translate(_currentPlantDefToGrow?.label ?? "HDH_GenericPlantLabel".Translate().ToString()), new TargetInfo(Position, Map, false), MessageTypeDefOf.NegativeEvent, true);
@@ -999,9 +991,48 @@ namespace HighDensityHydro
 				_requiresLightCheck,
 				growthRateFromGlow,
 				_unlitTicks,
-				2000);
+				LongTickInterval);
 
 			return growthRateFromGlow;
+		}
+
+		private void ApplyVanillaPowerLossDamageToSpawnedPlants(int tickInterval)
+		{
+			if (tickInterval <= 0 || PowerComp == null || PowerComp.PowerOn)
+			{
+				return;
+			}
+
+			float damage = HydroCoreLogic.CalculateVanillaPowerLossDamage(tickInterval, RareTickInterval);
+			if (damage <= 0f)
+			{
+				return;
+			}
+
+			foreach (Plant plant in PlantsOnMe.ToList())
+			{
+				plant.TakeDamage(new DamageInfo(DamageDefOf.Rotting, damage));
+			}
+		}
+
+		private void ApplyVanillaPowerLossDamageToStoredPlants(int tickInterval)
+		{
+			if (tickInterval <= 0 || PowerComp == null || PowerComp.PowerOn || !HasStoredPlantBatch())
+			{
+				return;
+			}
+
+			PlantTakeDamage(HydroCoreLogic.CalculateVanillaPowerLossDamage(tickInterval, RareTickInterval));
+		}
+
+		private bool HasStoredPlantBatch()
+		{
+			if (_currentPlantDefToGrow?.plant == null)
+			{
+				return false;
+			}
+
+			return _numStoredPlants > 0 || _numStoredPlantsBuffer > 0;
 		}
 		
 			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]

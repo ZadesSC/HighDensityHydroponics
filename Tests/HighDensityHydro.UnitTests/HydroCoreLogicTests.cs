@@ -56,8 +56,26 @@ namespace HighDensityHydro.UnitTests
         [Fact]
         public void CalculateGrowthDelta_UsesFertilityAndGlow()
         {
-            var delta = HydroCoreLogic.CalculateGrowthDelta(1f, 2.8f, 1f, 10f);
-            Assert.True(delta > 0f);
+            var delta = HydroCoreLogic.CalculateGrowthDelta(0.4f, 2.8f, 1f, 10f);
+            var expected = 1.72f * (2000f / (60000f * 10f));
+
+            Assert.Equal(expected, delta, 4);
+        }
+
+        [Fact]
+        public void CalculateGrowthDelta_KeepsFertilityInsensitivePlantsGrowing()
+        {
+            var delta = HydroCoreLogic.CalculateGrowthDelta(0f, 2.8f, 1f, 10f);
+            var expected = 2000f / (60000f * 10f);
+
+            Assert.Equal(expected, delta, 4);
+        }
+
+        [Fact]
+        public void CalculateVanillaPowerLossDamage_MatchesRareTickCadence()
+        {
+            Assert.Equal(1f, HydroCoreLogic.CalculateVanillaPowerLossDamage(250), 3);
+            Assert.Equal(8f, HydroCoreLogic.CalculateVanillaPowerLossDamage(2000), 3);
         }
 
         [Fact]
