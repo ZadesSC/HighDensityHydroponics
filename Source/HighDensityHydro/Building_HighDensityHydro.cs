@@ -52,6 +52,7 @@ namespace HighDensityHydro
 		private float _basePowerIncrease = 50f;
 		private float _capacityExponent = 1.2f;
 		private int _plantsPerLayer = 4;
+		private int _defaultPowerScalingLevel = 0;
 		private int _currentPowerScalingLevel = 0;
 		private int _maxPowerScalingLevel = 100;
 		
@@ -78,7 +79,16 @@ namespace HighDensityHydro
 			//TODO: maybe move this somewhere else, should only be called and generated once
 			PlantPosIndices();
 
+			if (!respawningAfterLoad && _powerScalesCapacity)
+			{
+				_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(0, _defaultPowerScalingLevel, _maxPowerScalingLevel);
+			}
+
 			_plantCapacity = CalculateCurrentPlantCapacity();
+			if (_powerScalesCapacity && PowerComp != null)
+			{
+				PowerComp.PowerOutput = -1 * CalculateCurrentPowerCost();
+			}
 		}
 		
 		private void LoadConfig()
@@ -94,6 +104,7 @@ namespace HighDensityHydro
 				_powerScalesCapacity = modExt.powerScalesCapacity;
 				_basePowerIncrease = modExt.basePowerIncrease;
 				_capacityExponent = modExt.capacityExponent;
+				_defaultPowerScalingLevel = modExt.defaultPowerScalingLevel;
 				_maxPowerScalingLevel = modExt.maxPowerScalingLevel;
 				_plantsPerLayer = HydroCoreLogic.SanitizePlantsPerLayer(modExt.plantsPerLayer);
 			}
@@ -193,6 +204,16 @@ namespace HighDensityHydro
 		{
 			foreach (var g in base.GetGizmos())
 				yield return g;
+
+			yield return new Command_Action
+			{
+				defaultLabel = "HDH_ResetHydroponics".Translate(),
+				defaultDesc = "HDH_ResetHydroponicsDesc".Translate(),
+				action = delegate()
+				{
+					KillAllPlantsAndReset();
+				}
+			};
 
 			if (DebugSettings.ShowDevGizmos)
 			{
@@ -370,6 +391,9 @@ namespace HighDensityHydro
 				    offset = Vector2.zero;
 				    center = drawLoc + Vector3.up * 0.01f;
 			    }
+			        var barRotation = (this.def.size.x == this.def.size.z)
+			        	? this.Rotation
+			        	: this.Rotation.Rotated(RotationDirection.Clockwise);
 		        GenDraw.FillableBarRequest barReq = new GenDraw.FillableBarRequest
 		        {
 			        preRotationOffset = offset,
@@ -379,7 +403,7 @@ namespace HighDensityHydro
 		            filledMat = HDH_Graphics.HDHBarFilledMat,
 		            unfilledMat = HDH_Graphics.HDHBarUnfilledMat,
 		            margin = this._margin,
-		            rotation = this.Rotation.Rotated(RotationDirection.Clockwise)
+		            rotation = barRotation
 		        };
 		        GenDraw.DrawFillableBar(barReq);
 		    }

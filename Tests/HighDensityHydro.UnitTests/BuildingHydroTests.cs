@@ -31,6 +31,7 @@ namespace HighDensityHydro.UnitTests
                     basePowerIncrease = 80f,
                     capacityExponent = 1.5f,
                     plantsPerLayer = 0,
+                    defaultPowerScalingLevel = 5,
                     maxPowerScalingLevel = 12,
                 }
             });
@@ -47,6 +48,7 @@ namespace HighDensityHydro.UnitTests
             Assert.Equal(80f, building.BasePowerIncrease, 3);
             Assert.Equal(1.5f, building.CapacityExponent, 3);
             Assert.Equal(1, building.PlantsPerLayer);
+            Assert.Equal(5, GetField<int>(building, "_defaultPowerScalingLevel"));
             Assert.Equal(12, GetField<int>(building, "_maxPowerScalingLevel"));
         }
 
@@ -178,6 +180,31 @@ namespace HighDensityHydro.UnitTests
             Assert.Equal(4, building.StoredPlantCount);
             Assert.Equal("Harvest", GetField<object>(building, "_bayStage").ToString());
             Assert.Same(plant, building.CurrentPlantedDef);
+        }
+
+        [Fact]
+        public void KillAllPlantsAndReset_ClearsStoredState()
+        {
+            var building = new Building_HighDensityHydro();
+
+            SetField(building, "_numStoredPlants", 3);
+            SetField(building, "_numStoredPlantsBuffer", 2);
+            SetField(building, "_plantAge", 6000);
+            SetField(building, "_curGrowth", 0.75f);
+            SetField(building, "_averageHarvestGrowth", 0.4f);
+            SetField(building, "_unlitTicks", 4000);
+            SetField(building, "_bayStage", Enum.Parse(typeof(Building_HighDensityHydro).GetNestedType("BayStage", BindingFlags.NonPublic), "Harvest"));
+
+            InvokeNonPublic(building, "KillAllPlantsAndReset");
+
+            Assert.Equal(0, building.StoredPlantCount);
+            Assert.Equal(0, GetField<int>(building, "_numStoredPlantsBuffer"));
+            Assert.Equal(0, building.PlantAge);
+            Assert.Equal(0f, building.PlantGrowth, 3);
+            Assert.Equal(0f, GetField<float>(building, "_averageHarvestGrowth"), 3);
+            Assert.Equal(0, GetField<int>(building, "_unlitTicks"));
+            Assert.Equal("Sowing", GetField<object>(building, "_bayStage").ToString());
+            Assert.Null(building.CurrentPlantedDef);
         }
 
         private static ThingDef CreateHydroDef()

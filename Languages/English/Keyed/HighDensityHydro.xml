@@ -18,6 +18,8 @@
     <HDH_DevIncreaseGrowth>Dev: Increase growth by 10%</HDH_DevIncreaseGrowth>
     <HDH_DevSetGrowthMax>Dev: Set growth to 100%</HDH_DevSetGrowthMax>
     <HDH_DevIncreaseAge>Dev: Increase age by 1 day</HDH_DevIncreaseAge>
+    <HDH_ResetHydroponics>Reset hydroponics</HDH_ResetHydroponics>
+    <HDH_ResetHydroponicsDesc>Clear all stored progress and remove any plants currently on this hydroponics bay.</HDH_ResetHydroponicsDesc>
 
     <HDH_ITabInvalidBuilding>Not a valid HDH building.</HDH_ITabInvalidBuilding>
     <HDH_ITabLabel>Hydroponics</HDH_ITabLabel>

@@ -16,6 +16,7 @@ namespace HighDensityHydro
         public float basePowerIncrease = 50f;
         public float capacityExponent = 1.2f;
         public int plantsPerLayer = 4;
+        public int defaultPowerScalingLevel = 0;
         public int maxPowerScalingLevel = 100;
     }
 }

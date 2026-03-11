@@ -220,6 +220,7 @@
                 <basePowerIncrease>50</basePowerIncrease>
                 <capacityExponent>1.15</capacityExponent>
                 <plantsPerLayer>4</plantsPerLayer>
+                <defaultPowerScalingLevel>20</defaultPowerScalingLevel>
             </li>
         </modExtensions>
         <researchPrerequisites>

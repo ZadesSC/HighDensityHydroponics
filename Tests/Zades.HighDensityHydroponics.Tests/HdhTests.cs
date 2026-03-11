@@ -118,15 +118,16 @@ internal sealed class HdhQuantumConfigTest : IHarnessTestCase
         var requiresAtmosphere = HdhReflection.RequiresAtmosphereCheck(building);
         var powerScales = HdhReflection.PowerScalesCapacity(building);
         var plantsPerLayer = HdhReflection.PlantsPerLayer(building);
+        var scalingLevel = HdhReflection.CurrentPowerScalingLevel(building);
         var capacity = HdhReflection.MaxPlantCapacity(building);
 
-        if (requiresLight || requiresTemperature || !requiresAtmosphere || !powerScales || plantsPerLayer != 4 || capacity != 4)
+        if (requiresLight || requiresTemperature || !requiresAtmosphere || !powerScales || plantsPerLayer != 4 || scalingLevel != 20 || capacity != 84)
         {
             details = "Quantum config flags/capacity do not match branch expectations.";
             return HarnessTestStatus.Failed;
         }
 
-        details = "Quantum config flags and base capacity matched expected values.";
+        details = "Quantum config flags and default density matched expected values.";
         return HarnessTestStatus.Passed;
     }
 }
