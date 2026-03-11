@@ -172,12 +172,14 @@ namespace HighDensityHydro.UnitTests
             var plant = CreatePlantDef(0f);
 
             SetField(building, "_plantCapacity", 4);
+            SetField(building, "_unlitTicks", 12345);
             SetSelectedPlantDef(building, plant);
 
             InvokeNonPublic(building, "ForceHarvestReadyForDev");
 
             Assert.Equal(1f, building.PlantGrowth, 3);
             Assert.Equal(4, building.StoredPlantCount);
+            Assert.Equal(12345, GetField<int>(building, "_unlitTicks"));
             Assert.Equal("Harvest", GetField<object>(building, "_bayStage").ToString());
             Assert.Same(plant, building.CurrentPlantedDef);
         }
@@ -205,6 +207,29 @@ namespace HighDensityHydro.UnitTests
             Assert.Equal(0, GetField<int>(building, "_unlitTicks"));
             Assert.Equal("Sowing", GetField<object>(building, "_bayStage").ToString());
             Assert.Null(building.CurrentPlantedDef);
+        }
+
+        [Theory]
+        [InlineData("Sowing")]
+        [InlineData("Harvest")]
+        public void TickLong_DoesNotRunInternalLifecycleWithoutStoredPlantsInNonGrowingStages(string stageName)
+        {
+            var building = new Building_HighDensityHydro();
+            var plant = CreatePlantDef(0f);
+
+            SetField(building, "_bayStage", Enum.Parse(typeof(Building_HighDensityHydro).GetNestedType("BayStage", BindingFlags.NonPublic), stageName));
+            SetField(building, "_numStoredPlants", 0);
+            SetField(building, "_plantAge", 6000);
+            SetField(building, "_unlitTicks", 4000);
+            SetField(building, "_plantHealth", 55f);
+            SetField(building, "_currentPlantDefToGrow", plant);
+
+            building.TickLong();
+
+            Assert.Equal(6000, building.PlantAge);
+            Assert.Equal(4000, GetField<int>(building, "_unlitTicks"));
+            Assert.Equal(55f, building.PlantHealth, 3);
+            Assert.Equal(stageName, GetField<object>(building, "_bayStage").ToString());
         }
 
         private static ThingDef CreateHydroDef()

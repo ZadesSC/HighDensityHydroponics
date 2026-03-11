@@ -13,6 +13,7 @@
     <HDH_NumStoredPlants>Stored Plants: {0}</HDH_NumStoredPlants>
     <HDH_AverageLight>Average Light: {0}</HDH_AverageLight>
     <HDH_CurrentPlantGrowth>{0}: {1}</HDH_CurrentPlantGrowth>
+    <HDH_DebugUnlitTicks>Debug Unlit Ticks: {0}</HDH_DebugUnlitTicks>
     <HDH_GenericPlantLabel>plant</HDH_GenericPlantLabel>
 
     <HDH_DevIncreaseGrowth>Dev: Increase growth by 10%</HDH_DevIncreaseGrowth>
