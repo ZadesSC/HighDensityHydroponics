@@ -45,3 +45,10 @@ Logs/
 *.zip
 *.rar
 *.7z
+
+# Harness outputs
+Tests/artifacts/
+Tests/*/Assemblies/
+
+# SDK build symbols
+Assemblies/*.pdb

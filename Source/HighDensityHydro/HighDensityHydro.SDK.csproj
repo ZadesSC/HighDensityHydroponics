@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>HighDensityHydro</AssemblyName>
+    <RootNamespace>HighDensityHydro</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>../../Assemblies</OutputPath>
+    <DebugType>portable</DebugType>
+    <RimWorldDir Condition="'$(RimWorldDir)' == '' and '$(RIMWORLD_DIR)' != ''">$(RIMWORLD_DIR)</RimWorldDir>
+    <RimWorldDir Condition="'$(RimWorldDir)' == ''">G:\Games\Steam\steamapps\common\RimWorld</RimWorldDir>
+    <HarmonyDllPath Condition="'$(HarmonyDllPath)' == '' and '$(HARMONY_DLL_PATH)' != ''">$(HARMONY_DLL_PATH)</HarmonyDllPath>
+    <HarmonyDllPath Condition="'$(HarmonyDllPath)' == ''">G:\Games\Steam\steamapps\workshop\content\294100\1127530465\1.6\Assemblies\0Harmony.dll</HarmonyDllPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Building_HighDensityHydro.cs" />
+    <Compile Include="DBHHydroPatch.cs" />
+    <Compile Include="HDDefOf.cs" />
+    <Compile Include="HDH_Graphics.cs" />
+    <Compile Include="HDH_Mod.cs" />
+    <Compile Include="GrowerSowPatch.cs" />
+    <Compile Include="HydroCoreLogic.cs" />
+    <Compile Include="HydroStatsExtension.cs" />
+    <Compile Include="ITab_HDHDetails.cs" />
+    <Compile Include="Patch_Command_SetPlantToGrow.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(HarmonyDllPath)</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+</Project>

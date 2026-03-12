@@ -11,6 +11,9 @@ namespace HighDensityHydro
 {
 	public class Building_HighDensityHydro : Building_PlantGrower, IPlantToGrowSettable
 	{
+		private static Texture2D _resetHydroponicsIcon;
+		private static Texture2D ResetHydroponicsIcon => _resetHydroponicsIcon ??= ContentFinder<Texture2D>.Get("UI/Commands/ResetHydroponics");
+
 		// for graphics drawing
 		private Dictionary<IntVec3, Matrix4x4> _drawMatrixCache = new Dictionary<IntVec3, Matrix4x4>();
 		private Vector2 _barsize;
@@ -25,27 +28,44 @@ namespace HighDensityHydro
 		}
 		
 		// hydroponic stuff
+		private const int RareTickInterval = 250;
+		private const int LongTickInterval = 2000;
 		private int _tickCounter = 0;
 		IEnumerable<IntVec3> IPlantToGrowSettable.Cells => this.OccupiedRect().Cells;
 		private Building_HighDensityHydro.BayStage _bayStage;
 		private CompPowerTrader _powerCompCached;
-		private bool _wasPoweredLastTick = true;
 
 		// plant stuff
+		// I should make a custom plant class or struct
 		private ThingDef _currentPlantDefToGrow = null;
+		private float _plantHealth = 100f;
 		private int _plantAge = 0;
 		private int _plantCapacity;
+		private int _plantCapacityFromDef;
 		private int _numStoredPlants = 0;
 		private int _numStoredPlantsBuffer = 0; // buffer used for multi-harvestable plants
-		private float _fertility = 2.8f;
+		private float _fertility = 2.8f; // default
 		private float _curGrowth = 0;
 		private float _avgGlow;
+		private int _unlitTicks = 0;
 		private float _averageHarvestGrowth = 0f; // this keeps track of average growth of plants that can be harvested multiple times
+		private bool _requiresLightCheck = true;
+		private bool _requiresTemperatureCheck = true;
+		private bool _requiresAtmosphereCheck = true;
+		private bool _powerScalesCapacity = false;
+		private float _basePowerIncrease = 50f;
+		private float _capacityExponent = 1.2f;
+		private int _plantsPerLayer = 4;
+		private int _defaultPowerScalingLevel = 0;
+		private int _currentPowerScalingLevel = 0;
+		private int _maxPowerScalingLevel = 100;
+		
 		
 		public Building_HighDensityHydro()
 		{
 		}
 		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
@@ -62,6 +82,17 @@ namespace HighDensityHydro
 			
 			//TODO: maybe move this somewhere else, should only be called and generated once
 			PlantPosIndices();
+
+			if (!respawningAfterLoad && _powerScalesCapacity)
+			{
+				_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(0, _defaultPowerScalingLevel, _maxPowerScalingLevel);
+			}
+
+			_plantCapacity = CalculateCurrentPlantCapacity();
+			if (_powerScalesCapacity && PowerComp != null)
+			{
+				PowerComp.PowerOutput = -1 * CalculateCurrentPowerCost();
+			}
 		}
 		
 		private void LoadConfig()
@@ -69,11 +100,21 @@ namespace HighDensityHydro
 			HydroStatsExtension modExt = def.GetModExtension<HydroStatsExtension>();
 			if (modExt != null)
 			{
-				_plantCapacity = modExt.capacity;
+				_plantCapacityFromDef = modExt.capacity;
 				_fertility = modExt.fertility;
+				_requiresLightCheck = modExt.requiresLightCheck;
+				_requiresTemperatureCheck = modExt.requiresTemperatureCheck;
+				_requiresAtmosphereCheck = modExt.requiresAtmosphereCheck;
+				_powerScalesCapacity = modExt.powerScalesCapacity;
+				_basePowerIncrease = modExt.basePowerIncrease;
+				_capacityExponent = modExt.capacityExponent;
+				_defaultPowerScalingLevel = modExt.defaultPowerScalingLevel;
+				_maxPowerScalingLevel = modExt.maxPowerScalingLevel;
+				_plantsPerLayer = HydroCoreLogic.SanitizePlantsPerLayer(modExt.plantsPerLayer);
 			}
 		}
 		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void ExposeData()
 		{
 			base.ExposeData();
@@ -83,8 +124,21 @@ namespace HighDensityHydro
 			Scribe_Values.Look<int>(ref this._numStoredPlantsBuffer, "storedPlantsBuffer", 0, false);
 			Scribe_Values.Look<int>(ref this._plantAge, "plantAge", 0, false);
 			Scribe_Values.Look<float>(ref this._curGrowth, "growth", 0f, false);
+			Scribe_Values.Look<int>(ref this._unlitTicks, "unlitTicks", 0, false);
 			Scribe_Values.Look<float>(ref this._averageHarvestGrowth, "averageHarvestGrowth", 0f, false);
 			Scribe_Defs.Look(ref _currentPlantDefToGrow, "queuedPlantDefToGrow");
+			Scribe_Values.Look<int>(ref this._plantCapacity, "plantCapacity", 0, false);
+			Scribe_Values.Look<int>(ref this._currentPowerScalingLevel, "currentPowerScalingLevel", 0, false);
+			Scribe_Values.Look<float>(ref this._plantHealth, "plantHealth", -1f, false);
+			
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				if (_plantHealth < 0f)
+				{
+					_plantHealth = _currentPlantDefToGrow?.BaseMaxHitPoints ?? 100f;
+				}
+			}
+			
 			
 			// if (Scribe.mode == LoadSaveMode.LoadingVars)
 			// {
@@ -98,22 +152,33 @@ namespace HighDensityHydro
 			// }
 		}
 		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override string GetInspectString()
 		{
 			string text = base.GetInspectString();
+			if (!_requiresTemperatureCheck)
+			{
+				text = RemoveInspectLine(text, "CannotGrowBadSeasonTemperature".Translate().ToString());
+				text = RemoveInspectLine(text, "GrowSeasonHereNow".Translate().ToString());
+			}
 
 			text += "\n" + "HDH_NumStoredPlants".Translate(_numStoredPlants + _numStoredPlantsBuffer);
 
 			if (this._numStoredPlants > 0)
 			{
-				// "{PlantLabel}: {GrowthPercent}%"
-				text += "\n" + _currentPlantDefToGrow.LabelCap + ": " + string.Format("{0:#0}%", this._curGrowth * 100f);
+				string plantLabel = _currentPlantDefToGrow?.LabelCap ?? "HDH_GenericPlantLabel".Translate().ToString();
+				text += "\n" + "HDH_CurrentPlantGrowth".Translate(plantLabel, string.Format("{0:#0}%", this._curGrowth * 100f));
 
 				if (HDH_Mod.settings.lightRequirement && this._avgGlow >= 0f)
 				{
 					// "Average Light: {0}%"
 					text += "\n" + "HDH_AverageLight".Translate(string.Format("{0:0}%", this._avgGlow * 100f));
 				}
+			}
+
+			if (Prefs.DevMode)
+			{
+				text += "\n" + "HDH_DebugUnlitTicks".Translate(_unlitTicks);
 			}
 
 			// if (Prefs.DevMode)
@@ -127,18 +192,44 @@ namespace HighDensityHydro
 
 			return text;
 		}
+
+		private static string RemoveInspectLine(string text, string lineToRemove)
+		{
+			if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(lineToRemove))
+			{
+				return text;
+			}
+
+			var lines = text
+				.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
+				.Where(line => !string.Equals(line, lineToRemove, StringComparison.Ordinal));
+
+			return string.Join("\n", lines);
+		}
 		
 		// Add dev gizmos
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
 			foreach (var g in base.GetGizmos())
 				yield return g;
 
+			yield return new Command_Action
+			{
+				defaultLabel = "HDH_ResetHydroponics".Translate(),
+				defaultDesc = "HDH_ResetHydroponicsDesc".Translate(),
+				icon = ResetHydroponicsIcon,
+				action = delegate()
+				{
+					KillAllPlantsAndReset();
+				}
+			};
+
 			if (DebugSettings.ShowDevGizmos)
 			{
 				yield return new Command_Action
 				{
-					defaultLabel = "Dev: Increase Growth by 10%",
+					defaultLabel = "HDH_DevIncreaseGrowth".Translate(),
 					action = delegate()
 					{
 						_curGrowth += 0.1f;
@@ -146,19 +237,18 @@ namespace HighDensityHydro
 					}
 				};
 				
-				yield return new Command_Action
-				{
-					defaultLabel = "Dev: Set Growth to 100%",
-					action = delegate()
+					yield return new Command_Action
 					{
-						_curGrowth = 1f;
-						_numStoredPlants = _plantCapacity;
-					}
-				};
+						defaultLabel = "HDH_DevSetGrowthMax".Translate(),
+						action = delegate()
+						{
+							ForceHarvestReadyForDev();
+						}
+					};
 
 				yield return new Command_Action
 				{
-					defaultLabel = "Dev: Increase Age by 1 day",
+					defaultLabel = "HDH_DevIncreaseAge".Translate(),
 					action = delegate()
 					{
 						_plantAge += 60000;
@@ -172,45 +262,69 @@ namespace HighDensityHydro
 				// 	{
 				// 		_numStoredPlants = 0;
 				// 	}
-				// };
+					// };
+				}
+			}
+
+		private void ForceHarvestReadyForDev()
+		{
+			_curGrowth = 1f;
+			_numStoredPlants = _plantCapacity;
+			if (_currentPlantDefToGrow == null)
+			{
+				_currentPlantDefToGrow = GetPlantDefToGrow();
+			}
+
+			_bayStage = BayStage.Harvest;
+			MarkPlantsMeshDirty();
+		}
+
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		private void MarkPlantsMeshDirty()
+		{
+			_drawMatrixCache.Clear();
+			if (Map == null)
+			{
+				return;
+			}
+
+			foreach (IntVec3 cell in this.OccupiedRect().Cells)
+			{
+				Map.mapDrawer.MapMeshDirty(cell, MapMeshFlagDefOf.Things);
 			}
 		}
 
 		// Tick rare should only handle sowing and harvesting stage to make it feel more responsible, should tick every
 		// ~4.1s at speed 1 (60tps)
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void TickRare()
 		{
-			_tickCounter += 250;
+			_tickCounter += RareTickInterval;
 			//Log.Message($"[HDH] Tick: storedPlants={storedPlants}, growth={growth}, stage={bayStage}");
 			
 			//TODO: check if we need to call this
 			//base.TickRare();
-			
-			bool poweredNow = this.PowerComp == null || this.PowerComp.PowerOn;
-			if (HDH_Mod.settings.killPlantsOnNoPower)
+			ApplyVanillaPowerLossDamageToSpawnedPlants(RareTickInterval);
+			if (_bayStage != BayStage.Growing)
 			{
-				if (this._wasPoweredLastTick && !poweredNow)
-				{
-					this.KillAllPlantsAndReset();
-				}
+				ApplyVanillaPowerLossDamageToStoredPlants(RareTickInterval);
 			}
-			this._wasPoweredLastTick = poweredNow;
 			
 			switch (_bayStage)
 			{
 			case BayStage.Sowing:
 				HandleSowing();
-				return;
+				break;
 			case BayStage.Harvest:
 				HandleHarvest();
-				return;
+				break;
 			case BayStage.Growing:
 				break;
 			default:
 				return;
 			}
 
-			if (_tickCounter >= 2000)
+			if (_tickCounter >= LongTickInterval)
 			{
 				_tickCounter = 0;
 				TickLong();
@@ -218,6 +332,7 @@ namespace HighDensityHydro
 		}
 		
 		// TickLong will simulate plant growth and other plant related data since vanilla also does this in tick long
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void TickLong()
 		{
 			//TODO: check if we need to call this
@@ -226,24 +341,88 @@ namespace HighDensityHydro
 			switch (_bayStage)
 			{
 				case BayStage.Growing:
+					ApplyVanillaPowerLossDamageToStoredPlants(LongTickInterval);
+					if (HandleInternalPlantLifecycleTick(resetWhenEmpty: true))
+					{
+						return;
+					}
+
 					HandleGrowing();
 					return;
 				case BayStage.Sowing:
 				case BayStage.Harvest:
+					if (_numStoredPlants <= 0)
+					{
+						return;
+					}
+
+					HandleInternalPlantLifecycleTick(resetWhenEmpty: false);
+					return;
 				default:
 					return;
 			}
 		}
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		void IPlantToGrowSettable.SetPlantDefToGrow(ThingDef plantDef)
+		{
+			SetPlantDefToGrowInternal(plantDef);
+		}
+
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public new void SetPlantDefToGrow(ThingDef plantDef)
 		{
-			base.SetPlantDefToGrow(plantDef);
+			SetPlantDefToGrowInternal(plantDef);
 		}
+
+		private void SetPlantDefToGrowInternal(ThingDef plantDef)
+		{
+			ThingDef previousPlantDef = GetPlantDefToGrow();
+			base.SetPlantDefToGrow(plantDef);
+
+			if (previousPlantDef == plantDef)
+			{
+				return;
+			}
+
+			if (_bayStage == BayStage.Sowing)
+			{
+				ResetPlantStateForSowing(clearSpawnedPlants: true);
+			}
+		}
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		bool IPlantToGrowSettable.CanAcceptSowNow()
+		{
+			return CanAcceptSowNowInternal();
+		}
+
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public new bool CanAcceptSowNow()
 		{
-			return base.CanAcceptSowNow() && _bayStage == BayStage.Sowing && _numStoredPlants < _plantCapacity;
+			return CanAcceptSowNowInternal();
+		}
+
+		private bool CanAcceptSowNowInternal()
+		{
+			if (_bayStage != BayStage.Sowing || _numStoredPlants >= _plantCapacity)
+			{
+				return false;
+			}
+
+			if (_requiresTemperatureCheck)
+			{
+				return base.CanAcceptSowNow();
+			}
+
+			if (PowerComp != null && !PowerComp.PowerOn)
+			{
+				return false;
+			}
+
+			return GetPlantDefToGrow() != null;
 		}
 		
 		// used to draw progress bar
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
 		    base.DrawAt(drawLoc, flip);
@@ -268,6 +447,9 @@ namespace HighDensityHydro
 				    offset = Vector2.zero;
 				    center = drawLoc + Vector3.up * 0.01f;
 			    }
+			        var barRotation = (this.def.size.x == this.def.size.z)
+			        	? this.Rotation
+			        	: this.Rotation.Rotated(RotationDirection.Clockwise);
 		        GenDraw.FillableBarRequest barReq = new GenDraw.FillableBarRequest
 		        {
 			        preRotationOffset = offset,
@@ -277,7 +459,7 @@ namespace HighDensityHydro
 		            filledMat = HDH_Graphics.HDHBarFilledMat,
 		            unfilledMat = HDH_Graphics.HDHBarUnfilledMat,
 		            margin = this._margin,
-		            rotation = this.Rotation.Rotated(RotationDirection.Clockwise)
+		            rotation = barRotation
 		        };
 		        GenDraw.DrawFillableBar(barReq);
 		    }
@@ -288,6 +470,7 @@ namespace HighDensityHydro
 
 		//draw plants stuff
 		//TODO: clean up this code
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void Print(SectionLayer layer)
 		{
 			base.Print(layer);
@@ -434,18 +617,19 @@ namespace HighDensityHydro
 		//draw plants stuff
 		private static int[][][] rootList = new int[25][][];
 		//draw plants stuff
-		static void PlantPosIndices()
-		{
-			for (int i = 0; i < 25; i++)
+			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+			static void PlantPosIndices()
 			{
-				rootList[i] = new int[8][];
-				for (int j = 0; j < 8; j++)
+				for (int i = 0; i < 25; i++)
 				{
-					int[] array = new int[i + 1];
-					for (int k = 0; k < i; k++)
+					rootList[i] = new int[8][];
+					for (int j = 0; j < 8; j++)
 					{
-						array[k] = k;
-					}
+						int[] array = new int[i + 1];
+						for (int k = 0; k <= i; k++)
+						{
+							array[k] = k;
+						}
 
 					array.Shuffle<int>();
 					rootList[i][j] = array;
@@ -454,28 +638,32 @@ namespace HighDensityHydro
 		}
 		
 		//draw plants stuff
-		private static int[] GetStablePositionIndices(ThingDef plant, Vector3 cell, int index)
-		{
-			int maxMeshCount = plant.plant.maxMeshCount;
-			int num = ((cell.GetHashCode() + index) ^ 42348528) % 8;
-			return rootList[maxMeshCount - 1][num];
-		}
+			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+			private static int[] GetStablePositionIndices(ThingDef plant, Vector3 cell, int index)
+			{
+				int maxMeshCount = plant.plant.maxMeshCount;
+				if (maxMeshCount < 1 || maxMeshCount > rootList.Length)
+				{
+					return new[] { 0 };
+				}
+				int num = ((cell.GetHashCode() + index) ^ 42348528) % 8;
+				if (num < 0)
+				{
+					num += 8;
+				}
+				return rootList[maxMeshCount - 1][num];
+			}
 
 
 
 		// sowing logic, should allow sowing and once plants are sowed, the hydroponics will "store" them by deleting
 		// them and then adding them to the internal counter
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void HandleSowing()
 		{
-			if (_currentPlantDefToGrow == null)
+			if (_currentPlantDefToGrow == null || _currentPlantDefToGrow != GetPlantDefToGrow())
 			{
-				_currentPlantDefToGrow = GetPlantDefToGrow();
-			}
-
-			if (_currentPlantDefToGrow != GetPlantDefToGrow())
-			{
-				_currentPlantDefToGrow = GetPlantDefToGrow();
-				KillAllPlantsAndReset();
+				ResetPlantStateForSowing(clearSpawnedPlants: true);
 			}
 			
 			// if max, clean up current stage and move on to grow stage
@@ -500,11 +688,13 @@ namespace HighDensityHydro
 				}
 				
 				_bayStage = BayStage.Growing;
+				MarkPlantsMeshDirty();
 				SoundDefOf.CryptosleepCasket_Accept.PlayOneShot(new TargetInfo(Position, Map, false));
 				return;
 			}
 			
 			// if not max, keep storing plants as normal
+			bool storedAnyPlants = false;
 			foreach (Plant plant in PlantsOnMe.ToList<Plant>())
 			{
 				// make sure the plant is actually growing (ie. pawns have finishing sowing the plant) before storing it
@@ -513,10 +703,17 @@ namespace HighDensityHydro
 				
 				plant.DeSpawn(DestroyMode.Vanish);
 				_numStoredPlants++;
+				storedAnyPlants = true;
+			}
+
+			if (storedAnyPlants)
+			{
+				MarkPlantsMeshDirty();
 			}
 		}
 
 		// call this only in tick long, logic in here assume per 2000tick intervals
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void HandleGrowing()
 		{
 			ThingDef plantDef = _currentPlantDefToGrow;
@@ -526,10 +723,10 @@ namespace HighDensityHydro
 				return;
 			}
 			
-			if (_numStoredPlants == 0)
+			if (_numStoredPlants <= 0)
 			{
 				Log.Warning($"[HDH] [{this.ThingID}] No stored plants during growing stage, going back to sowing");
-				KillAllPlantsAndReset();
+				ResetPlantStateForSowing(clearSpawnedPlants: true);
 				return;
 			}
 			
@@ -540,34 +737,14 @@ namespace HighDensityHydro
 				return;
 			}
 			
-			// age the plant
-			_plantAge += 2000;
-			
-			// check if plant died of old age lmao
-			// 0 case is ageless
-			if (plantDef.plant.LifespanTicks > 0 && _plantAge > plantDef.plant.LifespanTicks)
-			{
-				//Log.Message($"[HDH] Plant died of old age at {_plantAge} ticks (lifespan: {_currentPlantDefToGrow.plant.LifespanTicks})");
-				Messages.Message("MessagePlantDiedOfRot".Translate(_currentPlantDefToGrow?.label ?? "plant"), new TargetInfo(base.Position, Map, false), MessageTypeDefOf.NegativeEvent, true);
-				_curGrowth = 0f;
-				_plantAge = 0;
-				_numStoredPlants = 0;
-				_numStoredPlantsBuffer = 0;
-				_averageHarvestGrowth = 0f;
-				_currentPlantDefToGrow = GetPlantDefToGrow();
-				_bayStage = BayStage.Sowing;
-				return;
-			}
-			
-			
-			_avgGlow = -1f;
+			float growthRateFromGlow = GetGrowthRateFromGlow(plantDef);
 			
 			if (PowerComp != null && !PowerComp.PowerOn)
 			{
 				return;
 			}
 			
-			if (!PlantUtility.GrowthSeasonNow(Position, Map, _currentPlantDefToGrow))
+			if (!PlantUtility.GrowthSeasonNow(Position, Map, _currentPlantDefToGrow) && _requiresTemperatureCheck)
 			{
 				return;
 			}
@@ -582,24 +759,8 @@ namespace HighDensityHydro
 			//TODO: check for vacuum as well
 			//TODO: check and track unlit ticks for rotting plants
 			
-			float growthRateFromGlow = 0f;
-			if (HDH_Mod.settings.lightRequirement)
+			if (HDH_Mod.settings.lightRequirement && _requiresLightCheck)
 			{
-				float minGlow = plantDef.plant.growMinGlow;
-				float optimalGlow = plantDef.plant.growOptimalGlow;
-				float totalGlow = 0f;
-				int cellCount = 0;
-				foreach (IntVec3 cell in this.OccupiedRect().Cells)
-				{
-					totalGlow += Map.glowGrid.GroundGlowAt(cell, false, false);
-					cellCount++;
-				}
-				_avgGlow = ((cellCount > 0) ? (totalGlow / cellCount) : 1f);
-				if (_avgGlow >= minGlow)
-				{
-					growthRateFromGlow = Mathf.Clamp01((_avgGlow - minGlow) / (optimalGlow - minGlow));
-				}
-			
 				if (growthRateFromGlow <= 0f)
 				{
 					return;
@@ -612,15 +773,17 @@ namespace HighDensityHydro
 			
 			// assume we are ticking in TickLong(), which we should
 			float growDays = _currentPlantDefToGrow.plant.growDays;
-			float growthPerTick = 1f / (60000f * growDays) * 2000f;
-			_curGrowth += _fertility * growthRateFromGlow * growthPerTick;
+			float fertilitySensitivity = _currentPlantDefToGrow.plant.fertilitySensitivity;
+			_curGrowth += HydroCoreLogic.CalculateGrowthDelta(fertilitySensitivity, _fertility, growthRateFromGlow, growDays);
 			_curGrowth = Mathf.Clamp01(_curGrowth);
 			if (_curGrowth >= 1f)
 			{
 				_bayStage = BayStage.Harvest;
+				MarkPlantsMeshDirty();
 			}
 		}
 
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void HandleHarvest()
 		{
 			// this keeps track of unharvested plants
@@ -666,53 +829,33 @@ namespace HighDensityHydro
 			if (_numStoredPlants != 0) return;
 			if (!allHarvested) return;
 			
-			// if it is a single harvest plant (eg rice), reset and go back to sowing stage
-			// if it is a multi harvest plant (eg ambrosia), reset buffer, set growth, and go to growing stage
-			if (plantDef.plant.harvestAfterGrowth == 0f)
+			var completion = HydroCoreLogic.ResolveHarvestCompletion(
+				plantDef.plant.harvestAfterGrowth,
+				_numStoredPlantsBuffer,
+				_averageHarvestGrowth,
+				_fertility,
+				plantDef.plant.fertilitySensitivity,
+				plantDef.plant.growDays,
+				_plantAge,
+				plantDef.plant.LifespanTicks);
+
+			if (completion.Action == HarvestCompletionAction.ResetToSowing)
 			{
-				_curGrowth = 0f;
-				_plantAge = 0;
-				_numStoredPlants = 0;
-				_numStoredPlantsBuffer = 0;
-				_averageHarvestGrowth = 0f;
-				_currentPlantDefToGrow = GetPlantDefToGrow();
-				_bayStage = BayStage.Sowing;
+				ResetPlantStateForSowing(clearSpawnedPlants: false);
+				return;
 			}
-			else
-			{
-				_averageHarvestGrowth /= (float)_numStoredPlantsBuffer;
-				
-				// Calculate estimated time to grow
-				// Assume optimal conditions and give a 5% fudge factor
-				// 0 case is ageless
-				float growthRemaining = 1f - _averageHarvestGrowth;
-				float estimatedTicksToGrow = (growthRemaining * 60000f * plantDef.plant.growDays) / 
-					(32500f * _fertility) * 60000f * 1.05f;
-				
-				int ageAfterNextGrow = _plantAge + (int)estimatedTicksToGrow;
-				bool willDieBeforeNextHarvest = plantDef.plant.LifespanTicks > 0 && ageAfterNextGrow > plantDef.plant.LifespanTicks;
-				
-				if (willDieBeforeNextHarvest)
-				{
-					_curGrowth = 0f;
-					_plantAge = 0;
-					_numStoredPlantsBuffer = 0;
-					_averageHarvestGrowth = 0f;
-					_currentPlantDefToGrow = GetPlantDefToGrow();
-					_bayStage = BayStage.Sowing;
-					return;
-				}
-				
-				_numStoredPlants = _numStoredPlantsBuffer;
-				_numStoredPlantsBuffer = 0;
-				_curGrowth = _averageHarvestGrowth;
-				_averageHarvestGrowth = 0f;
-				_bayStage = BayStage.Growing;
-			}
+
+			_numStoredPlants = completion.StoredPlants;
+			_numStoredPlantsBuffer = completion.StoredPlantsBuffer;
+			_curGrowth = completion.Growth;
+			_averageHarvestGrowth = completion.AverageHarvestGrowth;
+			_bayStage = BayStage.Growing;
+			MarkPlantsMeshDirty();
 		}
 
 		// Token: 0x17000014 RID: 20
 		// (get) Token: 0x06000139 RID: 313
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private new CompPowerTrader PowerComp
 		{
 			get
@@ -726,6 +869,7 @@ namespace HighDensityHydro
 		}
 
 		// Token: 0x06000142 RID: 322
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
 		{
 			// Check if we're being minified
@@ -740,30 +884,288 @@ namespace HighDensityHydro
 		}
 
 		// Token: 0x0600015B RID: 347
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void KillAllPlantsAndReset()
+		{
+			ResetPlantStateForSowing(clearSpawnedPlants: true);
+		}
+		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		private void ResetPlantStateForSowing(bool clearSpawnedPlants)
 		{
 			_bayStage = BayStage.Sowing;
 			_numStoredPlants = 0;
 			_numStoredPlantsBuffer = 0;
 			_plantAge = 0;
+			_unlitTicks = 0;
 			_curGrowth = 0f;
 			_averageHarvestGrowth = 0f;
+			_currentPlantDefToGrow = GetPlantDefToGrow();
+			_plantHealth = _currentPlantDefToGrow?.BaseMaxHitPoints ?? 100f;
+			MarkPlantsMeshDirty();
+			
+			if (!clearSpawnedPlants || !base.Spawned)
+			{
+				return;
+			}
+			
 			foreach (Plant plant in PlantsOnMe.ToList<Plant>())
 			{
 				plant.Destroy(DestroyMode.Vanish);
 			}
 		}
 
-		public int GetHDHCapacity()
+		private bool HandleInternalPlantLifecycleTick(bool resetWhenEmpty)
 		{
-			return _plantCapacity;
+			ThingDef plantDef = _currentPlantDefToGrow;
+			if (plantDef?.plant == null)
+			{
+				return false;
+			}
+
+			if (_numStoredPlants <= 0)
+			{
+				if (resetWhenEmpty)
+				{
+					Log.Warning($"[HDH] [{ThingID}] No stored plants during growing stage, going back to sowing");
+					ResetPlantStateForSowing(clearSpawnedPlants: true);
+					return true;
+				}
+
+				return false;
+			}
+
+			if (_numStoredPlants > _plantCapacity)
+			{
+				Log.Warning($"[HDH] [{ThingID}] Number of stored plant is at {_numStoredPlants}, which is higher than the capacity of {_plantCapacity}, setting it to capacity");
+				_numStoredPlants = _plantCapacity;
+			}
+
+			float dyingDamage = PlantCurrentDyingDamagePerTick * LongTickInterval;
+			PlantTakeDamage(dyingDamage);
+
+			if (_plantHealth <= 0)
+			{
+				string key = DyingBecauseExposedToVacuum
+					? "MessagePlantDiedOfRot_ExposedToVacuum"
+					: "MessagePlantDiedOfRot";
+				Messages.Message(key.Translate(_currentPlantDefToGrow?.label ?? "HDH_GenericPlantLabel".Translate().ToString()), new TargetInfo(Position, Map, false), MessageTypeDefOf.NegativeEvent, true);
+				ResetPlantStateForSowing(clearSpawnedPlants: false);
+				return true;
+			}
+
+			_plantAge += LongTickInterval;
+			if (plantDef.plant.LifespanTicks > 0 && _plantAge > plantDef.plant.LifespanTicks)
+			{
+				Messages.Message("MessagePlantDiedOfRot".Translate(_currentPlantDefToGrow?.label ?? "HDH_GenericPlantLabel".Translate().ToString()), new TargetInfo(Position, Map, false), MessageTypeDefOf.NegativeEvent, true);
+				ResetPlantStateForSowing(clearSpawnedPlants: false);
+				return true;
+			}
+
+			GetGrowthRateFromGlow(plantDef);
+			return false;
 		}
 
-		public int GetNumStoredPlants()
+		private float GetGrowthRateFromGlow(ThingDef plantDef)
 		{
-			return _numStoredPlants;
+			_avgGlow = -1f;
+			float growthRateFromGlow = 1f;
+			if (HDH_Mod.settings.lightRequirement && _requiresLightCheck)
+			{
+				float minGlow = plantDef.plant.growMinGlow;
+				float optimalGlow = plantDef.plant.growOptimalGlow;
+				float totalGlow = 0f;
+				int cellCount = 0;
+				foreach (IntVec3 cell in this.OccupiedRect().Cells)
+				{
+					totalGlow += Map.glowGrid.GroundGlowAt(cell, false, false);
+					cellCount++;
+				}
+
+				_avgGlow = cellCount > 0 ? totalGlow / cellCount : 1f;
+				growthRateFromGlow = HydroCoreLogic.CalculateGlowGrowthRate(_avgGlow, minGlow, optimalGlow);
+			}
+
+			_unlitTicks = HydroCoreLogic.UpdateUnlitTicks(
+				HDH_Mod.settings.lightRequirement,
+				_requiresLightCheck,
+				growthRateFromGlow,
+				_unlitTicks,
+				LongTickInterval);
+
+			return growthRateFromGlow;
 		}
 
+		private void ApplyVanillaPowerLossDamageToSpawnedPlants(int tickInterval)
+		{
+			if (tickInterval <= 0 || PowerComp == null || PowerComp.PowerOn)
+			{
+				return;
+			}
 
+			float damage = HydroCoreLogic.CalculateVanillaPowerLossDamage(tickInterval, RareTickInterval);
+			if (damage <= 0f)
+			{
+				return;
+			}
+
+			foreach (Plant plant in PlantsOnMe.ToList())
+			{
+				plant.TakeDamage(new DamageInfo(DamageDefOf.Rotting, damage));
+			}
+		}
+
+		private void ApplyVanillaPowerLossDamageToStoredPlants(int tickInterval)
+		{
+			if (tickInterval <= 0 || PowerComp == null || PowerComp.PowerOn || !HasStoredPlantBatch())
+			{
+				return;
+			}
+
+			PlantTakeDamage(HydroCoreLogic.CalculateVanillaPowerLossDamage(tickInterval, RareTickInterval));
+		}
+
+		private bool HasStoredPlantBatch()
+		{
+			if (_currentPlantDefToGrow?.plant == null)
+			{
+				return false;
+			}
+
+			return _numStoredPlants > 0 || _numStoredPlantsBuffer > 0;
+		}
+		
+			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+			public float PlantCurrentDyingDamagePerTick
+			{
+				get
+				{
+					if (!base.Spawned || _currentPlantDefToGrow?.plant == null)
+					{
+						return 0f;
+					}
+				float num = 0f;
+				// TODO: add dying for no sunlight and dying exposed to light
+				// if (!_currentPlantDefToGrow.plant.diesToLight && _currentPlantDefToGrow.plant.dieIfNoSunlight && this.unlitTicks > 450000)
+				// {
+				// 	num = Mathf.Max(num, 0.005f);
+				// }
+				// if (DyingBecauseExposedToLight)
+				// {
+				// 	float lerpPct = _avgGlow;
+				// 	num = Mathf.Max(num, Plant.DyingDamagePerTickBecauseExposedToLight.LerpThroughRange(lerpPct));
+				// }
+					num = HydroCoreLogic.CalculateDyingDamagePerTick(
+						_currentPlantDefToGrow.plant.LimitedLifespan,
+						_plantAge,
+						_currentPlantDefToGrow.plant.LifespanTicks,
+						!_currentPlantDefToGrow.plant.diesToLight &&
+						_currentPlantDefToGrow.plant.dieIfNoSunlight &&
+						HDH_Mod.settings.lightRequirement &&
+						_requiresLightCheck,
+						_unlitTicks,
+						_requiresAtmosphereCheck,
+						DyingBecauseExposedToVacuum,
+						base.Position.GetVacuum(base.Map));
+				// We don't track pollution or terrain
+				// if (this.DyingFromPollution || this.DyingFromNoPollution)
+				// {
+				// 	num = Mathf.Max(num, Plant.PollutionDamagePerTickRange.RandomInRangeSeeded(base.Position.GetHashCode()));
+				// }
+				// if (this.DyingBecauseOfTerrainTags)
+				// {
+				// 	num = Mathf.Max(num, 0.005f);
+				// }
+				return num;
+			}
+		}
+
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		private void PlantTakeDamage(float damage)
+		{
+			_plantHealth -= damage;
+		}
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		private bool DyingBecauseExposedToLight
+		{
+			get
+			{
+				return _currentPlantDefToGrow.plant.diesToLight && base.Spawned && _avgGlow > 0f;
+			}
+		}
+
+			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+			private bool DyingBecauseExposedToVacuum
+			{
+				get
+				{
+					return _requiresAtmosphereCheck &&
+					       _currentPlantDefToGrow?.plant != null &&
+					       !_currentPlantDefToGrow.plant.vacuumResistant &&
+					       base.Spawned &&
+					       base.Position.GetVacuum(base.Map) >= 0.5f;
+				}
+			}
+		
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		private bool Dying
+		{
+			get
+			{
+				return this.PlantCurrentDyingDamagePerTick > 0f;
+			}
+		}
+
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		public void AdjustCapacity(int scalingLevelOffset)
+		{
+			if (_powerCompCached == null)
+			{
+				return;
+			}
+			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(_currentPowerScalingLevel, scalingLevelOffset, _maxPowerScalingLevel);
+			_powerCompCached.PowerOutput = -1 * CalculateCurrentPowerCost();
+			_plantCapacity = CalculateCurrentPlantCapacity();
+		}
+
+		public int CalculateCurrentPlantCapacity()
+		{
+			return HydroCoreLogic.CalculateCapacity(_plantCapacityFromDef, _currentPowerScalingLevel, _plantsPerLayer);
+		}
+		
+		public float CalculateCurrentPowerCost()
+		{
+			return CalculatePowerCost(_currentPowerScalingLevel);
+		}
+		public float CalculatePowerCost(int scalingLevel)
+		{
+			var power = _powerCompCached ?? GetComp<CompPowerTrader>();
+			if (power == null)
+				return 0f;
+			
+			return HydroCoreLogic.CalculatePowerCost(this.def.GetCompProperties<CompProperties_Power>().PowerConsumption, _basePowerIncrease, _capacityExponent, scalingLevel);
+		}
+
+		public float CalculateNextPowerCostIncrease()
+		{
+			return CalculatePowerCost(_currentPowerScalingLevel + 1) - CalculatePowerCost(_currentPowerScalingLevel);
+		}
+		public int MaxPlantCapacity => _plantCapacity;
+		public int StoredPlantCount => _numStoredPlants;
+		public ThingDef CurrentPlantedDef => _currentPlantDefToGrow;
+		public ThingDef SelectedPlantDef => GetPlantDefToGrow();
+		public int PlantAge => _plantAge;
+		public float PlantHealth => _plantHealth;
+		public float Fertility => _fertility;
+		public float PlantGrowth => _curGrowth;
+		public float LastAverageGlow => _avgGlow;
+		public bool RequiresLightCheck => _requiresLightCheck;
+		public bool RequiresTemperatureCheck => _requiresTemperatureCheck;
+		public bool RequiresAtmosphereCheck => _requiresAtmosphereCheck;
+		public bool PowerScalesCapacity => _powerScalesCapacity;
+		public float BasePowerIncrease => _basePowerIncrease;
+		public float CapacityExponent => _capacityExponent;
+		public int PlantsPerLayer => _plantsPerLayer;
+		public int CurrentPowerScalingLevel => _currentPowerScalingLevel;
 	}
 }

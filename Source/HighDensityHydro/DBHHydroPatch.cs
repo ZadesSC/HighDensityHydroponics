@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -8,6 +9,7 @@ using Verse;
 
 namespace HighDensityHydro
 {
+    [ExcludeFromCodeCoverage]
     [StaticConstructorOnStartup]
     public static class DBHHydroPatch
     {
@@ -171,12 +173,17 @@ namespace HighDensityHydro
             {
                 var compPipe = __instance.AllComps.FirstOrDefault(c => c.GetType().Name == "CompPipe");
                 var pipeNet = pipeNetProp?.GetValue(compPipe);
-                if (anyRecyclersDelegate != null && (pipeNet == null || !anyRecyclersDelegate(pipeNet)))
+                var hasPipeNet = pipeNet != null;
+                var anyRecyclers = anyRecyclersDelegate != null && hasPipeNet && anyRecyclersDelegate(pipeNet);
+                if (HydroCoreLogic.ShouldConsumeDbhFuel(hasPipeNet, anyRecyclers))
                 {
-                    fuel.ConsumeFuel(0.05f * __instance.GetNumStoredPlants());
+                    fuel.ConsumeFuel(HydroCoreLogic.CalculateDbhFuelUse(__instance.StoredPlantCount));
                 }
 
-                compPipeTickRareDelegate?.Invoke(compPipe);
+                if (compPipe != null)
+                {
+                    compPipeTickRareDelegate?.Invoke(compPipe);
+                }
                 
             }
             return true;

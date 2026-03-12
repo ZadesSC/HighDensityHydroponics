@@ -1,18 +1,44 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
-    <!-- Mod setting values -->
-    <!-- Labels -->
+    <HDH_SettingsCategory>高密度水培</HDH_SettingsCategory>
+
     <HDH_LightRequirementLabel>光照需求</HDH_LightRequirementLabel>
-    <HDH_KillOnPowerLossLabel>斷電時殺死植物</HDH_KillOnPowerLossLabel>
     <HDH_AllowOtherVanillaPlantsLabel>允許其他原版植物</HDH_AllowOtherVanillaPlantsLabel>
-    
-    <!-- Tooltips -->
+
     <HDH_LightRequirementTooltip>啟用後，HDH水培種植需要光照。光照閾值取決於植物類型。</HDH_LightRequirementTooltip>
-    <HDH_KillOnPowerLossTooltip>啟用後，斷電時水培槽內所有植物會死亡。</HDH_KillOnPowerLossTooltip>
     <HDH_AllowOtherVanillaPlantsTooltip>允許玉米、乾草、惡魔絲等部分原版植物在水培槽中生長。</HDH_AllowOtherVanillaPlantsTooltip>
 
-    <!-- Hydroponics inspect pane values -->
-    <HDH_NumStoredPlants>儲存植物: {0}</HDH_NumStoredPlants>
-    <HDH_AverageLight>平均光照: {0}</HDH_AverageLight>
-</LanguageData>
+    <HDH_NumStoredPlants>儲存植物：{0}</HDH_NumStoredPlants>
+    <HDH_AverageLight>平均光照：{0}</HDH_AverageLight>
+    <HDH_CurrentPlantGrowth>{0}：{1}</HDH_CurrentPlantGrowth>
+    <HDH_DebugUnlitTicks>除錯：未受光照刻數：{0}</HDH_DebugUnlitTicks>
+    <HDH_GenericPlantLabel>植物</HDH_GenericPlantLabel>
 
+    <HDH_DevIncreaseGrowth>開發：生長提高10%</HDH_DevIncreaseGrowth>
+    <HDH_DevSetGrowthMax>開發：將生長設為100%</HDH_DevSetGrowthMax>
+    <HDH_DevIncreaseAge>開發：年齡增加1天</HDH_DevIncreaseAge>
+    <HDH_ResetHydroponics>重設水培槽</HDH_ResetHydroponics>
+    <HDH_ResetHydroponicsDesc>清除所有已儲存的生長進度，並移除這台水培槽上目前的所有植物。</HDH_ResetHydroponicsDesc>
+
+    <HDH_ITabInvalidBuilding>所選目標不是有效的HDH建築。</HDH_ITabInvalidBuilding>
+    <HDH_ITabLabel>水培</HDH_ITabLabel>
+    <HDH_None>無</HDH_None>
+    <HDH_ITabSelectedPlant>已選植物：{0}</HDH_ITabSelectedPlant>
+    <HDH_ITabCurrentBatch>當前批次：{0}</HDH_ITabCurrentBatch>
+    <HDH_ITabNextSowingPlant>下一輪播種植物：{0}</HDH_ITabNextSowingPlant>
+    <HDH_ITabStoredPlants>儲存植物：{0} / {1}</HDH_ITabStoredPlants>
+    <HDH_ITabPlantHealth>植物生命值：{0} / {1}</HDH_ITabPlantHealth>
+    <HDH_ITabPlantHealthNA>植物生命值：不可用</HDH_ITabPlantHealthNA>
+    <HDH_ITabGrowth>生長：{0}</HDH_ITabGrowth>
+    <HDH_ITabFertility>肥力：{0}</HDH_ITabFertility>
+    <HDH_ITabLight>光照：{0}</HDH_ITabLight>
+    <HDH_ITabLightNA>光照：不可用</HDH_ITabLightNA>
+    <HDH_ITabTemperature>溫度：{0}°C</HDH_ITabTemperature>
+    <HDH_ITabTemperatureNA>溫度：不可用</HDH_ITabTemperatureNA>
+    <HDH_ITabVacuum>真空度：{0}</HDH_ITabVacuum>
+    <HDH_ITabVacuumNA>真空度：不可用</HDH_ITabVacuumNA>
+    <HDH_ITabCurrentPowerUsage>當前耗電：{0}W</HDH_ITabCurrentPowerUsage>
+    <HDH_ITabPowerScalingDescription>提高或降低這台水培槽的密度。&#10;每提高一級會額外增加 {0} 株容量。</HDH_ITabPowerScalingDescription>
+    <HDH_ITabNextPowerIncrease>下一次提高會額外增加 {0}W 耗電</HDH_ITabNextPowerIncrease>
+    <HDH_ITabCurrentDensityLevel>當前密度等級：{0}</HDH_ITabCurrentDensityLevel>
+</LanguageData>

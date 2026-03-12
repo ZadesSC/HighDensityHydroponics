@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modMetaData>
+  <name>Zades High Density Hydroponics Tests</name>
+  <author>Zades</author>
+  <supportedVersions>
+    <li>1.6</li>
+  </supportedVersions>
+  <packageId>zades.highdensityhydroponics.tests</packageId>
+  <description>Runtime regression suite for High Density Hydroponics using Zades RimWorld Test Harness.</description>
+  <loadAfter>
+    <li>brrainz.harmony</li>
+    <li>zades.rimworld.testharness</li>
+    <li>mapleapple.highdensityhydroponics.fixed.zouhb.zades</li>
+  </loadAfter>
+</modMetaData>

@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <AssemblyName>HighDensityHydro.UnitTests</AssemblyName>
+    <RootNamespace>HighDensityHydro.UnitTests</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <RimWorldDir Condition="'$(RimWorldDir)' == '' and '$(RIMWORLD_DIR)' != ''">$(RIMWORLD_DIR)</RimWorldDir>
+    <RimWorldDir Condition="'$(RimWorldDir)' == ''">G:\Games\Steam\steamapps\common\RimWorld</RimWorldDir>
+    <HarmonyDllPath Condition="'$(HarmonyDllPath)' == '' and '$(HARMONY_DLL_PATH)' != ''">$(HARMONY_DLL_PATH)</HarmonyDllPath>
+    <HarmonyDllPath Condition="'$(HarmonyDllPath)' == ''">G:\Games\Steam\steamapps\workshop\content\294100\1127530465\1.6\Assemblies\0Harmony.dll</HarmonyDllPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Source\HighDensityHydro\HighDensityHydro.SDK.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>$(HarmonyDllPath)</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(RimWorldDir)\RimWorldWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.msbuild" Version="6.0.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
+    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

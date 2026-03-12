@@ -1,0 +1,3 @@
+[submodule "External/ZadesRimWorldTestHarness"]
+	path = External/ZadesRimWorldTestHarness
+	url = https://github.com/ZadesSC/Zades-RimWorld-Test-Harness.git

@@ -1,14 +1,14 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
-    <!-- 高密度水培槽 -->
+    <HDH_Hydroponics_mini.label>基础密度水培槽</HDH_Hydroponics_mini.label>
+    <HDH_Hydroponics_mini.description>基础级密植水培槽，在 1x4 占地内可容纳16株作物，以相同占地提供约4倍常规耕作面积。自带生长灯和营养循环，但不调节温度，断电会导致作物死亡。</HDH_Hydroponics_mini.description>
+
     <HDH_Hydroponics.label>高密度水培槽</HDH_Hydroponics.label>
-    <HDH_Hydroponics.description>一种人工营养浴，可在下方种植区实现极高密度的作物生长。营养泵需持续工作，断电时植物会死亡。自带光源，但通风系统不控温。</HDH_Hydroponics.description>
+    <HDH_Hydroponics.description>工业级密植水培槽，在 2x4 占地内可容纳80株作物，以相同占地提供约10倍常规耕作面积。内置照明与营养循环能维持高产，但仍需稳定供电和外部温控。</HDH_Hydroponics.description>
 
-    <!-- 超高密度水培槽 -->
     <HDH_Hydroponics_Hyper.label>超高密度水培槽</HDH_Hydroponics_Hyper.label>
-    <HDH_Hydroponics_Hyper.description>一种人工营养浴，可在下方种植区实现极高密度的作物生长。营养泵需持续工作，断电时植物会死亡。自带光源，但通风系统不控温。</HDH_Hydroponics_Hyper.description>
+    <HDH_Hydroponics_Hyper.description>高级超高密度水培槽，面向大型室内农场，在 2x6 占地内可容纳240株作物，以相同占地提供约20倍常规耕作面积。分层种植极其高产，但必须持续供电并做好气候管理，否则可能整批绝收。</HDH_Hydroponics_Hyper.description>
 
-    <!-- 迷你水培槽 -->
-    <HDH_Hydroponics_mini.label>迷你水培槽</HDH_Hydroponics_mini.label>
-    <HDH_Hydroponics_mini.description>一种人工营养浴，可在下方种植区实现极高密度的作物生长。营养泵需持续工作，断电时植物会死亡。自带光源，但通风系统不控温。</HDH_Hydroponics_mini.description>
+    <HDH_Hydroponics_Quantum.label>量子密度水培槽</HDH_Hydroponics_Quantum.label>
+    <HDH_Hydroponics_Quantum.description>Spacer级量子水培舱，将多层种植折叠进紧凑的 2x2 占地中。其基础容量会随可用电力提升，并无视常规光照、温度和大气限制，使能源供应成为主要生产瓶颈。</HDH_Hydroponics_Quantum.description>
 </LanguageData>
