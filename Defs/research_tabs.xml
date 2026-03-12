@@ -1,0 +1,8 @@
+<Defs>
+  <ResearchTabDef>
+    <defName>HDH_ResearchTab</defName>
+    <label>high-density hydroponics</label>
+    <generalTitle>High-Density Hydroponics</generalTitle>
+    <generalDescription>Specialized research for compact, stacked hydroponic growing systems.</generalDescription>
+  </ResearchTabDef>
+</Defs>
