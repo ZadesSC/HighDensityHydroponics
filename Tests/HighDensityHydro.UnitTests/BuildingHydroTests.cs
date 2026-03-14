@@ -187,7 +187,7 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
-        public void RequiresLightCheck_DisablesWhenBuiltInSunlampIsEnabled()
+        public void RequiresLightCheck_DoesNotChangeWhenBuiltInSunlampIsEnabled()
         {
             var building = new Building_HighDensityHydro();
             SetField(building, "_requiresLightCheck", true);
@@ -195,19 +195,7 @@ namespace HighDensityHydro.UnitTests
             Assert.True(building.RequiresLightCheck);
 
             SetField(building, "_builtInSunlampEnabled", true);
-            Assert.False(building.RequiresLightCheck);
-        }
-
-        [Fact]
-        public void ShouldBeLitNow_FollowsBuiltInSunlampSetting()
-        {
-            var building = new Building_HighDensityHydro();
-            var thingGlower = (IThingGlower)building;
-
-            Assert.False(thingGlower.ShouldBeLitNow());
-
-            SetField(building, "_builtInSunlampEnabled", true);
-            Assert.True(thingGlower.ShouldBeLitNow());
+            Assert.True(building.RequiresLightCheck);
         }
 
         [Fact]

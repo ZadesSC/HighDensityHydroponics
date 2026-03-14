@@ -9,7 +9,7 @@ using Verse.Sound;
 
 namespace HighDensityHydro
 {
-	public class Building_HighDensityHydro : Building_PlantGrower, IPlantToGrowSettable, IThingGlower
+	public class Building_HighDensityHydro : Building_PlantGrower, IPlantToGrowSettable
 	{
 		private const string BuiltInSunlampCellLightDefName = "HDH_BuiltInSunlampCellLight";
 		private static Texture2D _resetHydroponicsIcon;
@@ -206,7 +206,6 @@ namespace HighDensityHydro
 				text += "\n" + "PowerConsumptionMode".Translate() + ": " + CalculateCurrentPowerCost().ToString("F0") + " W";
 			}
 
-			text += "\n" + "HDH_BuiltInSunlampStatus".Translate(_builtInSunlampEnabled ? "HDH_StateOn".Translate() : "HDH_StateOff".Translate());
 			text += "\n" + "HDH_NumStoredPlants".Translate(_numStoredPlants + _numStoredPlantsBuffer);
 
 			if (this._numStoredPlants > 0)
@@ -1413,18 +1412,17 @@ namespace HighDensityHydro
 		public float Fertility => _fertility;
 		public float PlantGrowth => _curGrowth;
 		public float LastAverageGlow => _avgGlow;
-		public bool RequiresLightCheck => _requiresLightCheck && !_builtInSunlampEnabled;
+		public bool RequiresLightCheck => _requiresLightCheck;
 		public bool RequiresTemperatureCheck => _requiresTemperatureCheck;
 		public bool RequiresAtmosphereCheck => _requiresAtmosphereCheck;
 		public bool PowerScalesCapacity => _powerScalesCapacity;
 		public float BasePowerIncrease => _basePowerIncrease;
 		public float CapacityExponent => _capacityExponent;
-			public int PlantsPerLayer => _plantsPerLayer;
-			public int CurrentPowerScalingLevel => _currentPowerScalingLevel;
-			public bool BuiltInSunlampEnabled => _builtInSunlampEnabled;
-			public bool ShouldBeLitNow() => _builtInSunlampEnabled;
-			private float CurrentBasePowerConsumption => _builtInSunlampEnabled ? _powerConsumptionWhenSunlampOn : _powerConsumptionWhenSunlampOff;
-			private float CurrentBasePowerIncrease => _builtInSunlampEnabled ? _basePowerIncreaseWhenSunlampOn : _basePowerIncreaseWhenSunlampOff;
-			private float CurrentCapacityExponent => _builtInSunlampEnabled ? _capacityExponentWhenSunlampOn : _capacityExponentWhenSunlampOff;
-		}
+		public int PlantsPerLayer => _plantsPerLayer;
+		public int CurrentPowerScalingLevel => _currentPowerScalingLevel;
+		public bool BuiltInSunlampEnabled => _builtInSunlampEnabled;
+		private float CurrentBasePowerConsumption => _builtInSunlampEnabled ? _powerConsumptionWhenSunlampOn : _powerConsumptionWhenSunlampOff;
+		private float CurrentBasePowerIncrease => _builtInSunlampEnabled ? _basePowerIncreaseWhenSunlampOn : _basePowerIncreaseWhenSunlampOff;
+		private float CurrentCapacityExponent => _builtInSunlampEnabled ? _capacityExponentWhenSunlampOn : _capacityExponentWhenSunlampOff;
+	}
 }
