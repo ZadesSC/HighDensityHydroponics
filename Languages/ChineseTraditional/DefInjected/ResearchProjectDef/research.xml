@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <LanguageData>
     <HDH_BasicDensity.label>基礎密度水培技術</HDH_BasicDensity.label>
-    <HDH_BasicDensity.description>開發第一代多層密植水培基礎設施。解鎖基礎密度水培槽，這是一種 1x4 的緊湊型水培槽，可容納16株作物，以相同佔地提供約4倍耕作面積。</HDH_BasicDensity.description>
+    <HDH_BasicDensity.description>開發第一代多層密植水培基礎設施。解鎖基礎密度水培槽，這是一種 1x4 的緊湊型水培槽，可容納16株作物，以相同佔地提供約4倍耕作面積，並可透過額外耗電啟用內建太陽燈。</HDH_BasicDensity.description>
 
     <HDH_HighDensity.label>高密度水培技術</HDH_HighDensity.label>
-    <HDH_HighDensity.description>優化托盤堆疊、營養循環與照明控制，用於工業化密植農業。解鎖高密度水培槽，這是一種 2x4 的水培槽，可容納80株作物，以相同佔地提供約10倍耕作面積。</HDH_HighDensity.description>
+    <HDH_HighDensity.description>優化托盤堆疊、營養循環與照明控制，用於工業化密植農業。解鎖高密度水培槽，這是一種 2x4 的水培槽，可容納80株作物，以相同佔地提供約10倍耕作面積，並可透過額外耗電啟用內建太陽燈。</HDH_HighDensity.description>
 
     <HDH_HighDensity_Ultra.label>超高密度水培技術</HDH_HighDensity_Ultra.label>
-    <HDH_HighDensity_Ultra.description>將密植水培工程推進到高級材料和大規模環境維持。解鎖超高密度水培槽，這是一種 2x6 的水培槽，可容納240株作物，以相同佔地提供約20倍耕作面積。</HDH_HighDensity_Ultra.description>
+    <HDH_HighDensity_Ultra.description>將密植水培工程推進到高級材料和大規模環境維持。解鎖超高密度水培槽，這是一種 2x6 的水培槽，可容納240株作物，以相同佔地提供約20倍耕作面積，並可透過額外耗電啟用內建太陽燈。</HDH_HighDensity_Ultra.description>
 
     <HDH_HighDensity_Quantum.label>量子密度水培技術</HDH_HighDensity_Quantum.label>
-    <HDH_HighDensity_Quantum.description>將量子場操控應用於作物生長，把多層生長層折疊進單一緊湊艙室。解鎖量子密度水培槽，這是一種 2x2 的Spacer級水培槽，容量會隨供電增長，並無視常規光照、溫度與大氣限制。</HDH_HighDensity_Quantum.description>
+    <HDH_HighDensity_Quantum.description>將量子場操控應用於作物生長，把多層生長層折疊進單一緊湊艙室。解鎖量子密度水培槽，這是一種 2x2 的Spacer級水培槽，容量會隨供電增長，並可切換內建太陽燈作為額外能耗取捨。</HDH_HighDensity_Quantum.description>
 </LanguageData>

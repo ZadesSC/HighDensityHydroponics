@@ -10,7 +10,7 @@ namespace HighDensityHydro
     {
         public ITab_HDHDetails()
         {
-            size = new Vector2(400f, 400f);
+            size = new Vector2(400f, 430f);
             labelKey = "HDH_ITabLabel";
         }
 
@@ -26,7 +26,7 @@ namespace HighDensityHydro
                 return;
             }
 
-            size.y = building.PowerScalesCapacity ? 400f : 250f;
+            size.y = building.PowerScalesCapacity ? 430f : 280f;
 
             var power = building.GetComp<CompPowerTrader>();
             if (power == null)
@@ -68,7 +68,7 @@ namespace HighDensityHydro
                 Widgets.DefIcon(plantBox.BottomPartPixels(80f), selectedPlant);
             }
 
-            int infoLineCount = building.RequiresLightCheck ? 7 : 6;
+            int infoLineCount = building.RequiresLightCheck ? 8 : 7;
             Rect infoBox = new Rect(mainRect.x + 120f, mainRect.y + lineHeight + 5f, mainRect.width - 130f, lineHeight * infoLineCount);
             Listing_Standard listing = new Listing_Standard();
             listing.Begin(infoBox);
@@ -80,6 +80,7 @@ namespace HighDensityHydro
             }
 
             listing.Label("HDH_ITabStoredPlants".Translate(storedPlants, maxCapacity));
+            listing.Label("HDH_ITabBuiltInSunlamp".Translate(building.BuiltInSunlampEnabled ? "HDH_StateOn".Translate() : "HDH_StateOff".Translate()));
 
             if (currentPlant == null)
             {

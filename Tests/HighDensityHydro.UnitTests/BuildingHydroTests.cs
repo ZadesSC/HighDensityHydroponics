@@ -30,6 +30,12 @@ namespace HighDensityHydro.UnitTests
                     powerScalesCapacity = true,
                     basePowerIncrease = 80f,
                     capacityExponent = 1.5f,
+                    powerConsumptionWhenSunlampOff = 100f,
+                    powerConsumptionWhenSunlampOn = 200f,
+                    basePowerIncreaseWhenSunlampOff = 20f,
+                    basePowerIncreaseWhenSunlampOn = 40f,
+                    capacityExponentWhenSunlampOff = 1.1f,
+                    capacityExponentWhenSunlampOn = 1.2f,
                     plantsPerLayer = 0,
                     defaultPowerScalingLevel = 5,
                     maxPowerScalingLevel = 12,
@@ -50,6 +56,10 @@ namespace HighDensityHydro.UnitTests
             Assert.Equal(1, building.PlantsPerLayer);
             Assert.Equal(5, GetField<int>(building, "_defaultPowerScalingLevel"));
             Assert.Equal(12, GetField<int>(building, "_maxPowerScalingLevel"));
+            Assert.Equal(100f, GetField<float>(building, "_powerConsumptionWhenSunlampOff"), 3);
+            Assert.Equal(200f, GetField<float>(building, "_powerConsumptionWhenSunlampOn"), 3);
+            Assert.Equal(20f, GetField<float>(building, "_basePowerIncreaseWhenSunlampOff"), 3);
+            Assert.Equal(40f, GetField<float>(building, "_basePowerIncreaseWhenSunlampOn"), 3);
         }
 
         [Fact]
@@ -125,16 +135,39 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
-        public void CalculatePowerCost_UsesDefBaseConsumptionWhenPowerCompIsCached()
+        public void CalculatePowerCost_UsesConfiguredSunlampProfileWhenScalingActive()
         {
             var building = new Building_HighDensityHydro();
             building.def = CreateHydroDef();
-            SetField(building, "_basePowerIncrease", 50f);
-            SetField(building, "_capacityExponent", 1.2f);
+            SetField(building, "_powerScalesCapacity", true);
+            SetField(building, "_powerConsumptionWhenSunlampOff", 2800f);
+            SetField(building, "_powerConsumptionWhenSunlampOn", 3000f);
+            SetField(building, "_basePowerIncreaseWhenSunlampOff", 50f);
+            SetField(building, "_basePowerIncreaseWhenSunlampOn", 60f);
+            SetField(building, "_capacityExponentWhenSunlampOff", 1.2f);
+            SetField(building, "_capacityExponentWhenSunlampOn", 1.3f);
             SetField(building, "_powerCompCached", (CompPowerTrader)FormatterServices.GetUninitializedObject(typeof(CompPowerTrader)));
 
             Assert.Equal(2850f, building.CalculatePowerCost(0), 3);
             Assert.Equal(2886.4f, building.CalculatePowerCost(3), 3);
+
+            SetField(building, "_builtInSunlampEnabled", true);
+            Assert.Equal(3060f, building.CalculatePowerCost(0), 3);
+        }
+
+        [Fact]
+        public void CalculatePowerCost_ReturnsFixedConsumptionWhenScalingDisabled()
+        {
+            var building = new Building_HighDensityHydro();
+            building.def = CreateHydroDef();
+            SetField(building, "_powerConsumptionWhenSunlampOff", 300f);
+            SetField(building, "_powerConsumptionWhenSunlampOn", 425f);
+            SetField(building, "_powerCompCached", (CompPowerTrader)FormatterServices.GetUninitializedObject(typeof(CompPowerTrader)));
+
+            Assert.Equal(300f, building.CalculatePowerCost(0), 3);
+
+            SetField(building, "_builtInSunlampEnabled", true);
+            Assert.Equal(425f, building.CalculatePowerCost(0), 3);
         }
 
         [Fact]
@@ -142,13 +175,39 @@ namespace HighDensityHydro.UnitTests
         {
             var building = new Building_HighDensityHydro();
             building.def = CreateHydroDef();
-            SetField(building, "_basePowerIncrease", 50f);
-            SetField(building, "_capacityExponent", 1.2f);
+            SetField(building, "_powerScalesCapacity", true);
+            SetField(building, "_powerConsumptionWhenSunlampOff", 2800f);
+            SetField(building, "_basePowerIncreaseWhenSunlampOff", 50f);
+            SetField(building, "_capacityExponentWhenSunlampOff", 1.2f);
             SetField(building, "_currentPowerScalingLevel", 2);
             SetField(building, "_powerCompCached", (CompPowerTrader)FormatterServices.GetUninitializedObject(typeof(CompPowerTrader)));
 
             var expected = building.CalculatePowerCost(3) - building.CalculatePowerCost(2);
             Assert.Equal(expected, building.CalculateNextPowerCostIncrease(), 3);
+        }
+
+        [Fact]
+        public void RequiresLightCheck_DisablesWhenBuiltInSunlampIsEnabled()
+        {
+            var building = new Building_HighDensityHydro();
+            SetField(building, "_requiresLightCheck", true);
+
+            Assert.True(building.RequiresLightCheck);
+
+            SetField(building, "_builtInSunlampEnabled", true);
+            Assert.False(building.RequiresLightCheck);
+        }
+
+        [Fact]
+        public void ShouldBeLitNow_FollowsBuiltInSunlampSetting()
+        {
+            var building = new Building_HighDensityHydro();
+            var thingGlower = (IThingGlower)building;
+
+            Assert.False(thingGlower.ShouldBeLitNow());
+
+            SetField(building, "_builtInSunlampEnabled", true);
+            Assert.True(thingGlower.ShouldBeLitNow());
         }
 
         [Fact]
@@ -396,21 +455,26 @@ namespace HighDensityHydro.UnitTests
         private static void SetMember(object instance, string memberName, object value)
         {
             var type = instance.GetType();
-            var field = type.GetField(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (field != null)
+            while (type != null)
             {
-                field.SetValue(instance, value);
-                return;
+                var field = type.GetField(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (field != null)
+                {
+                    field.SetValue(instance, value);
+                    return;
+                }
+
+                var property = type.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                if (property != null)
+                {
+                    property.SetValue(instance, value, null);
+                    return;
+                }
+
+                type = type.BaseType;
             }
 
-            var property = type.GetProperty(memberName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-            if (property != null)
-            {
-                property.SetValue(instance, value, null);
-                return;
-            }
-
-            throw new MissingMemberException(type.FullName, memberName);
+            throw new MissingMemberException(instance.GetType().FullName, memberName);
         }
     }
 }

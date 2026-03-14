@@ -41,6 +41,22 @@
         </inspectorTabs>
     </ThingDef>
 
+    <ThingDef ParentName="EtherealThingBase">
+        <defName>HDH_BuiltInSunlampCellLight</defName>
+        <label>hydroponics sunlamp cell light</label>
+        <thingClass>ThingWithComps</thingClass>
+        <tickerType>Never</tickerType>
+        <selectable>false</selectable>
+        <isAutoAttackableMapObject>false</isAutoAttackableMapObject>
+        <comps>
+            <li Class="CompProperties_Glower">
+                <overlightRadius>1.1</overlightRadius>
+                <glowRadius>1.0</glowRadius>
+                <glowColor>(370,370,370,0)</glowColor>
+            </li>
+        </comps>
+    </ThingDef>
+
     <ThingDef ParentName="HDH_Hydroponics_base">
         <defName>HDH_Hydroponics_mini</defName>
         <label>basic-density hydroponics bay</label>
@@ -64,7 +80,7 @@
             <li Class="CompProperties_Forbiddable"/>
             <li Class="CompProperties_Power">
                 <compClass>CompPowerTrader</compClass>
-                <basePowerConsumption>425</basePowerConsumption>
+                <basePowerConsumption>300</basePowerConsumption>
             </li>
             <li Class="CompProperties_Flickable"/>
         </comps>
@@ -72,6 +88,8 @@
             <li Class="HighDensityHydro.HydroStatsExtension">
                 <fertility>2.8</fertility>
                 <capacity>16</capacity>
+                <powerConsumptionWhenSunlampOff>300</powerConsumptionWhenSunlampOff>
+                <powerConsumptionWhenSunlampOn>425</powerConsumptionWhenSunlampOn>
             </li>
         </modExtensions>
         <researchPrerequisites>
@@ -104,7 +122,7 @@
             <li Class="CompProperties_Forbiddable"/>
             <li Class="CompProperties_Power">
                 <compClass>CompPowerTrader</compClass>
-                <basePowerConsumption>1400</basePowerConsumption>
+                <basePowerConsumption>1000</basePowerConsumption>
             </li>
             <li Class="CompProperties_Flickable"/>
         </comps>
@@ -112,6 +130,8 @@
             <li Class="HighDensityHydro.HydroStatsExtension">
                 <fertility>2.8</fertility>
                 <capacity>80</capacity>
+                <powerConsumptionWhenSunlampOff>1000</powerConsumptionWhenSunlampOff>
+                <powerConsumptionWhenSunlampOn>1250</powerConsumptionWhenSunlampOn>
             </li>
         </modExtensions>
         <researchPrerequisites>
@@ -151,7 +171,7 @@
             <li Class="CompProperties_Forbiddable"/>
             <li Class="CompProperties_Power">
                 <compClass>CompPowerTrader</compClass>
-                <basePowerConsumption>2880</basePowerConsumption>
+                <basePowerConsumption>2200</basePowerConsumption>
             </li>
             <li Class="CompProperties_Flickable"/>
         </comps>
@@ -159,6 +179,8 @@
             <li Class="HighDensityHydro.HydroStatsExtension">
                 <fertility>2.8</fertility>
                 <capacity>240</capacity>
+                <powerConsumptionWhenSunlampOff>2200</powerConsumptionWhenSunlampOff>
+                <powerConsumptionWhenSunlampOn>2550</powerConsumptionWhenSunlampOn>
             </li>
         </modExtensions>
         <researchPrerequisites>
@@ -200,25 +222,26 @@
             <li Class="CompProperties_Forbiddable"/>
             <li Class="CompProperties_Power">
                 <compClass>CompPowerTrader</compClass>
-                <basePowerConsumption>2800</basePowerConsumption>
+                <basePowerConsumption>2500</basePowerConsumption>
             </li>
             <li Class="CompProperties_Flickable"/>
-            <li Class="CompProperties_Glower">
-                <overlightRadius>3.0</overlightRadius>
-                <glowRadius>3.0</glowRadius>
-                <glowColor>(370,370,370,0)</glowColor>
-            </li>
         </comps>
         <modExtensions>
             <li Class="HighDensityHydro.HydroStatsExtension">
                 <fertility>4.2</fertility>
                 <capacity>0</capacity>
-                <requiresLightCheck>false</requiresLightCheck>
+                <requiresLightCheck>true</requiresLightCheck>
                 <requiresTemperatureCheck>false</requiresTemperatureCheck>
                 <requiresAtmosphereCheck>true</requiresAtmosphereCheck>
                 <powerScalesCapacity>true</powerScalesCapacity>
-                <basePowerIncrease>30</basePowerIncrease>
-                <capacityExponent>1.06</capacityExponent>
+                <powerConsumptionWhenSunlampOff>2500</powerConsumptionWhenSunlampOff>
+                <powerConsumptionWhenSunlampOn>2800</powerConsumptionWhenSunlampOn>
+                <basePowerIncrease>20</basePowerIncrease>
+                <basePowerIncreaseWhenSunlampOff>20</basePowerIncreaseWhenSunlampOff>
+                <basePowerIncreaseWhenSunlampOn>25</basePowerIncreaseWhenSunlampOn>
+                <capacityExponent>1.05</capacityExponent>
+                <capacityExponentWhenSunlampOff>1.05</capacityExponentWhenSunlampOff>
+                <capacityExponentWhenSunlampOn>1.05</capacityExponentWhenSunlampOn>
                 <plantsPerLayer>4</plantsPerLayer>
                 <defaultPowerScalingLevel>20</defaultPowerScalingLevel>
             </li>
