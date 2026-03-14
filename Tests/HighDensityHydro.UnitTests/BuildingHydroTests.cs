@@ -36,6 +36,11 @@ namespace HighDensityHydro.UnitTests
                     basePowerIncreaseWhenSunlampOn = 40f,
                     capacityExponentWhenSunlampOff = 1.1f,
                     capacityExponentWhenSunlampOn = 1.2f,
+                    useThresholdPowerCurve = true,
+                    quadraticPowerThreshold = 20,
+                    quadraticPowerCoefficient = 3.3f,
+                    cubicPowerThreshold = 40,
+                    cubicPowerCoefficient = 0.35f,
                     plantsPerLayer = 0,
                     defaultPowerScalingLevel = 5,
                     maxPowerScalingLevel = 12,
@@ -153,6 +158,32 @@ namespace HighDensityHydro.UnitTests
 
             SetField(building, "_builtInSunlampEnabled", true);
             Assert.Equal(3060f, building.CalculatePowerCost(0), 3);
+        }
+
+        [Fact]
+        public void CalculatePowerCost_UsesThresholdCurveWhenEnabled()
+        {
+            var building = new Building_HighDensityHydro();
+            building.def = CreateHydroDef();
+            SetField(building, "_powerScalesCapacity", true);
+            SetField(building, "_useThresholdPowerCurve", true);
+            SetField(building, "_powerConsumptionWhenSunlampOff", 1600f);
+            SetField(building, "_powerConsumptionWhenSunlampOn", 1900f);
+            SetField(building, "_basePowerIncreaseWhenSunlampOff", 8f);
+            SetField(building, "_basePowerIncreaseWhenSunlampOn", 8f);
+            SetField(building, "_capacityExponentWhenSunlampOff", 1.03f);
+            SetField(building, "_capacityExponentWhenSunlampOn", 1.03f);
+            SetField(building, "_quadraticPowerThreshold", 20);
+            SetField(building, "_quadraticPowerCoefficient", 3.3f);
+            SetField(building, "_cubicPowerThreshold", 40);
+            SetField(building, "_cubicPowerCoefficient", 0.35f);
+            SetField(building, "_powerCompCached", (CompPowerTrader)FormatterServices.GetUninitializedObject(typeof(CompPowerTrader)));
+
+            Assert.Equal(1614.45f, building.CalculatePowerCost(20), 2);
+            Assert.Equal(9727.13f, building.CalculatePowerCost(60), 2);
+
+            SetField(building, "_builtInSunlampEnabled", true);
+            Assert.Equal(1914.45f, building.CalculatePowerCost(20), 2);
         }
 
         [Fact]

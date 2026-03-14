@@ -222,7 +222,7 @@
             <li Class="CompProperties_Forbiddable"/>
             <li Class="CompProperties_Power">
                 <compClass>CompPowerTrader</compClass>
-                <basePowerConsumption>2500</basePowerConsumption>
+                <basePowerConsumption>1600</basePowerConsumption>
             </li>
             <li Class="CompProperties_Flickable"/>
         </comps>
@@ -234,14 +234,19 @@
                 <requiresTemperatureCheck>false</requiresTemperatureCheck>
                 <requiresAtmosphereCheck>true</requiresAtmosphereCheck>
                 <powerScalesCapacity>true</powerScalesCapacity>
-                <powerConsumptionWhenSunlampOff>2500</powerConsumptionWhenSunlampOff>
-                <powerConsumptionWhenSunlampOn>2800</powerConsumptionWhenSunlampOn>
-                <basePowerIncrease>20</basePowerIncrease>
-                <basePowerIncreaseWhenSunlampOff>20</basePowerIncreaseWhenSunlampOff>
-                <basePowerIncreaseWhenSunlampOn>25</basePowerIncreaseWhenSunlampOn>
-                <capacityExponent>1.05</capacityExponent>
-                <capacityExponentWhenSunlampOff>1.05</capacityExponentWhenSunlampOff>
-                <capacityExponentWhenSunlampOn>1.05</capacityExponentWhenSunlampOn>
+                <powerConsumptionWhenSunlampOff>1600</powerConsumptionWhenSunlampOff>
+                <powerConsumptionWhenSunlampOn>1900</powerConsumptionWhenSunlampOn>
+                <basePowerIncrease>8</basePowerIncrease>
+                <basePowerIncreaseWhenSunlampOff>8</basePowerIncreaseWhenSunlampOff>
+                <basePowerIncreaseWhenSunlampOn>8</basePowerIncreaseWhenSunlampOn>
+                <capacityExponent>1.03</capacityExponent>
+                <capacityExponentWhenSunlampOff>1.03</capacityExponentWhenSunlampOff>
+                <capacityExponentWhenSunlampOn>1.03</capacityExponentWhenSunlampOn>
+                <useThresholdPowerCurve>true</useThresholdPowerCurve>
+                <quadraticPowerThreshold>20</quadraticPowerThreshold>
+                <quadraticPowerCoefficient>3.3</quadraticPowerCoefficient>
+                <cubicPowerThreshold>40</cubicPowerThreshold>
+                <cubicPowerCoefficient>0.35</cubicPowerCoefficient>
                 <plantsPerLayer>4</plantsPerLayer>
                 <defaultPowerScalingLevel>20</defaultPowerScalingLevel>
             </li>

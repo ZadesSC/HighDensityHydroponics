@@ -39,6 +39,16 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
+        public void CalculateThresholdPowerCost_AppliesStagedPenaltiesAfterThresholds()
+        {
+            var levelTwenty = HydroCoreLogic.CalculateThresholdPowerCost(1600f, 8f, 1.03f, 20, 20, 3.3f, 40, 0.35f);
+            var levelSixty = HydroCoreLogic.CalculateThresholdPowerCost(1600f, 8f, 1.03f, 60, 20, 3.3f, 40, 0.35f);
+
+            Assert.Equal(1614.45f, levelTwenty, 2);
+            Assert.Equal(9727.13f, levelSixty, 2);
+        }
+
+        [Fact]
         public void SanitizePlantsPerLayer_NeverReturnsLessThanOne()
         {
             Assert.Equal(1, HydroCoreLogic.SanitizePlantsPerLayer(0));

@@ -66,6 +66,22 @@ namespace HighDensityHydro
             return baseConsumption + (basePowerIncrease * Mathf.Pow(capacityExponent, scalingLevel));
         }
 
+        public static float CalculateThresholdPowerCost(
+            float baseConsumption,
+            float basePowerIncrease,
+            float capacityExponent,
+            int scalingLevel,
+            int quadraticThreshold,
+            float quadraticCoefficient,
+            int cubicThreshold,
+            float cubicCoefficient)
+        {
+            var earlyTerm = basePowerIncrease * Mathf.Pow(capacityExponent, scalingLevel);
+            var quadraticPenalty = quadraticCoefficient * Mathf.Pow(Mathf.Max(0, scalingLevel - quadraticThreshold), 2f);
+            var cubicPenalty = cubicCoefficient * Mathf.Pow(Mathf.Max(0, scalingLevel - cubicThreshold), 3f);
+            return baseConsumption + earlyTerm + quadraticPenalty + cubicPenalty;
+        }
+
         public static float CalculateGlowGrowthRate(float averageGlow, float minGlow, float optimalGlow)
         {
             if (averageGlow < minGlow)

@@ -21,6 +21,11 @@ namespace HighDensityHydro
         public float basePowerIncreaseWhenSunlampOn = -1f;
         public float capacityExponentWhenSunlampOff = -1f;
         public float capacityExponentWhenSunlampOn = -1f;
+        public bool useThresholdPowerCurve = false;
+        public int quadraticPowerThreshold = 20;
+        public float quadraticPowerCoefficient = 0f;
+        public int cubicPowerThreshold = 40;
+        public float cubicPowerCoefficient = 0f;
         public int plantsPerLayer = 4;
         public int defaultPowerScalingLevel = 0;
         public int maxPowerScalingLevel = 100;

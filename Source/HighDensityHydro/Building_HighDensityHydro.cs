@@ -65,6 +65,11 @@ namespace HighDensityHydro
 		private float _basePowerIncreaseWhenSunlampOn;
 		private float _capacityExponentWhenSunlampOff;
 		private float _capacityExponentWhenSunlampOn;
+		private bool _useThresholdPowerCurve;
+		private int _quadraticPowerThreshold = 20;
+		private float _quadraticPowerCoefficient;
+		private int _cubicPowerThreshold = 40;
+		private float _cubicPowerCoefficient;
 		private int _plantsPerLayer = 4;
 		private int _defaultPowerScalingLevel = 0;
 		private int _currentPowerScalingLevel = 0;
@@ -123,6 +128,11 @@ namespace HighDensityHydro
 				_basePowerIncreaseWhenSunlampOn = modExt.basePowerIncreaseWhenSunlampOn >= 0f ? modExt.basePowerIncreaseWhenSunlampOn : _basePowerIncrease;
 				_capacityExponentWhenSunlampOff = modExt.capacityExponentWhenSunlampOff >= 0f ? modExt.capacityExponentWhenSunlampOff : _capacityExponent;
 				_capacityExponentWhenSunlampOn = modExt.capacityExponentWhenSunlampOn >= 0f ? modExt.capacityExponentWhenSunlampOn : _capacityExponent;
+				_useThresholdPowerCurve = modExt.useThresholdPowerCurve;
+				_quadraticPowerThreshold = modExt.quadraticPowerThreshold;
+				_quadraticPowerCoefficient = modExt.quadraticPowerCoefficient;
+				_cubicPowerThreshold = modExt.cubicPowerThreshold;
+				_cubicPowerCoefficient = modExt.cubicPowerCoefficient;
 				_defaultPowerScalingLevel = modExt.defaultPowerScalingLevel;
 				_maxPowerScalingLevel = modExt.maxPowerScalingLevel;
 				_plantsPerLayer = HydroCoreLogic.SanitizePlantsPerLayer(modExt.plantsPerLayer);
@@ -135,6 +145,11 @@ namespace HighDensityHydro
 				_basePowerIncreaseWhenSunlampOn = _basePowerIncrease;
 				_capacityExponentWhenSunlampOff = _capacityExponent;
 				_capacityExponentWhenSunlampOn = _capacityExponent;
+				_useThresholdPowerCurve = false;
+				_quadraticPowerThreshold = 20;
+				_quadraticPowerCoefficient = 0f;
+				_cubicPowerThreshold = 40;
+				_cubicPowerCoefficient = 0f;
 			}
 		}
 		
@@ -1395,7 +1410,20 @@ namespace HighDensityHydro
 			{
 				return CurrentBasePowerConsumption;
 			}
-			
+
+			if (_useThresholdPowerCurve)
+			{
+				return HydroCoreLogic.CalculateThresholdPowerCost(
+					CurrentBasePowerConsumption,
+					CurrentBasePowerIncrease,
+					CurrentCapacityExponent,
+					scalingLevel,
+					_quadraticPowerThreshold,
+					_quadraticPowerCoefficient,
+					_cubicPowerThreshold,
+					_cubicPowerCoefficient);
+			}
+
 			return HydroCoreLogic.CalculatePowerCost(CurrentBasePowerConsumption, CurrentBasePowerIncrease, CurrentCapacityExponent, scalingLevel);
 		}
 
