@@ -217,8 +217,8 @@
                 <requiresTemperatureCheck>false</requiresTemperatureCheck>
                 <requiresAtmosphereCheck>true</requiresAtmosphereCheck>
                 <powerScalesCapacity>true</powerScalesCapacity>
-                <basePowerIncrease>50</basePowerIncrease>
-                <capacityExponent>1.15</capacityExponent>
+                <basePowerIncrease>30</basePowerIncrease>
+                <capacityExponent>1.06</capacityExponent>
                 <plantsPerLayer>4</plantsPerLayer>
                 <defaultPowerScalingLevel>20</defaultPowerScalingLevel>
             </li>

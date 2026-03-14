@@ -82,17 +82,7 @@ namespace HighDensityHydro
 			
 			//TODO: maybe move this somewhere else, should only be called and generated once
 			PlantPosIndices();
-
-			if (!respawningAfterLoad && _powerScalesCapacity)
-			{
-				_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(0, _defaultPowerScalingLevel, _maxPowerScalingLevel);
-			}
-
-			_plantCapacity = CalculateCurrentPlantCapacity();
-			if (_powerScalesCapacity && PowerComp != null)
-			{
-				PowerComp.PowerOutput = -1 * CalculateCurrentPowerCost();
-			}
+			RefreshScaledCapacityAndPower(initializeDefaultScalingLevel: !respawningAfterLoad);
 		}
 		
 		private void LoadConfig()
@@ -162,6 +152,14 @@ namespace HighDensityHydro
 				text = RemoveInspectLine(text, "GrowSeasonHereNow".Translate().ToString());
 			}
 
+			if (_powerScalesCapacity)
+			{
+				SyncScaledPowerOutputIfNeeded();
+				text = RemoveInspectLineStartingWith(text, "PowerNeeded".Translate().ToString());
+				text = RemoveInspectLineStartingWith(text, "PowerConsumptionMode".Translate().ToString());
+				text += "\n" + "PowerConsumptionMode".Translate() + ": " + CalculateCurrentPowerCost().ToString("F0") + " W";
+			}
+
 			text += "\n" + "HDH_NumStoredPlants".Translate(_numStoredPlants + _numStoredPlantsBuffer);
 
 			if (this._numStoredPlants > 0)
@@ -203,6 +201,20 @@ namespace HighDensityHydro
 			var lines = text
 				.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
 				.Where(line => !string.Equals(line, lineToRemove, StringComparison.Ordinal));
+
+			return string.Join("\n", lines);
+		}
+
+		private static string RemoveInspectLineStartingWith(string text, string linePrefix)
+		{
+			if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(linePrefix))
+			{
+				return text;
+			}
+
+			var lines = text
+				.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
+				.Where(line => !line.StartsWith(linePrefix, StringComparison.Ordinal));
 
 			return string.Join("\n", lines);
 		}
@@ -304,6 +316,7 @@ namespace HighDensityHydro
 			
 			//TODO: check if we need to call this
 			//base.TickRare();
+			SyncScaledPowerOutputIfNeeded();
 			ApplyVanillaPowerLossDamageToSpawnedPlants(RareTickInterval);
 			if (_bayStage != BayStage.Growing)
 			{
@@ -1034,6 +1047,37 @@ namespace HighDensityHydro
 
 			return _numStoredPlants > 0 || _numStoredPlantsBuffer > 0;
 		}
+
+		private void RefreshScaledCapacityAndPower(bool initializeDefaultScalingLevel)
+		{
+			if (_powerScalesCapacity && initializeDefaultScalingLevel)
+			{
+				_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(0, _defaultPowerScalingLevel, _maxPowerScalingLevel);
+			}
+
+			_plantCapacity = CalculateCurrentPlantCapacity();
+			SyncScaledPowerOutputIfNeeded();
+		}
+
+		private void SyncScaledPowerOutputIfNeeded()
+		{
+			if (!_powerScalesCapacity)
+			{
+				return;
+			}
+
+			var powerComp = PowerComp;
+			if (powerComp == null)
+			{
+				return;
+			}
+
+			var expectedPowerOutput = -1f * CalculateCurrentPowerCost();
+			if (!Mathf.Approximately(powerComp.PowerOutput, expectedPowerOutput))
+			{
+				powerComp.PowerOutput = expectedPowerOutput;
+			}
+		}
 		
 			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 			public float PlantCurrentDyingDamagePerTick
@@ -1119,13 +1163,8 @@ namespace HighDensityHydro
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public void AdjustCapacity(int scalingLevelOffset)
 		{
-			if (_powerCompCached == null)
-			{
-				return;
-			}
 			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(_currentPowerScalingLevel, scalingLevelOffset, _maxPowerScalingLevel);
-			_powerCompCached.PowerOutput = -1 * CalculateCurrentPowerCost();
-			_plantCapacity = CalculateCurrentPlantCapacity();
+			RefreshScaledCapacityAndPower(initializeDefaultScalingLevel: false);
 		}
 
 		public int CalculateCurrentPlantCapacity()

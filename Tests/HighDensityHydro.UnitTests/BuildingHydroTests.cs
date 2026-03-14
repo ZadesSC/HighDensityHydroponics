@@ -64,6 +64,51 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
+        public void AdjustCapacity_UpdatesCapacityEvenWithoutCachedPowerComp()
+        {
+            var building = new Building_HighDensityHydro();
+            SetField(building, "_plantCapacityFromDef", 4);
+            SetField(building, "_currentPowerScalingLevel", 3);
+            SetField(building, "_plantsPerLayer", 4);
+            SetField(building, "_maxPowerScalingLevel", 100);
+
+            building.AdjustCapacity(2);
+
+            Assert.Equal(5, building.CurrentPowerScalingLevel);
+            Assert.Equal(24, building.MaxPlantCapacity);
+        }
+
+        [Fact]
+        public void RefreshScaledCapacityAndPower_InitializesDefaultScalingLevelWhenRequested()
+        {
+            var building = new Building_HighDensityHydro();
+            SetField(building, "_powerScalesCapacity", true);
+            SetField(building, "_plantCapacityFromDef", 4);
+            SetField(building, "_plantsPerLayer", 4);
+            SetField(building, "_defaultPowerScalingLevel", 20);
+            SetField(building, "_maxPowerScalingLevel", 100);
+
+            InvokeNonPublic(building, "RefreshScaledCapacityAndPower", true);
+
+            Assert.Equal(20, building.CurrentPowerScalingLevel);
+            Assert.Equal(84, building.MaxPlantCapacity);
+        }
+
+        [Fact]
+        public void RemoveInspectLineStartingWith_RemovesMatchingPrefix()
+        {
+            var input = "Power needed: 2800 W\nStored plants: 4";
+
+            var result = (string)InvokeNonPublicStatic(
+                typeof(Building_HighDensityHydro),
+                "RemoveInspectLineStartingWith",
+                input,
+                "Power needed");
+
+            Assert.Equal("Stored plants: 4", result);
+        }
+
+        [Fact]
         public void CalculatePowerCost_UsesDefBaseConsumptionWhenPowerCompIsCached()
         {
             var building = new Building_HighDensityHydro();
@@ -310,6 +355,16 @@ namespace HighDensityHydro.UnitTests
         private static void InvokeNonPublic(object instance, string methodName)
         {
             instance.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(instance, null);
+        }
+
+        private static void InvokeNonPublic(object instance, string methodName, params object[] parameters)
+        {
+            instance.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(instance, parameters);
+        }
+
+        private static object InvokeNonPublicStatic(Type type, string methodName, params object[] parameters)
+        {
+            return type.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, parameters);
         }
 
         private static T GetField<T>(object instance, string fieldName)
