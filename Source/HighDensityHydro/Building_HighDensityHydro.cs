@@ -59,6 +59,7 @@ namespace HighDensityHydro
 		private int _defaultPowerScalingLevel = 0;
 		private int _currentPowerScalingLevel = 0;
 		private int _maxPowerScalingLevel = 100;
+		private int MinimumPowerScalingLevel => _powerScalesCapacity ? 1 : 0;
 		
 		
 		public Building_HighDensityHydro()
@@ -1050,10 +1051,9 @@ namespace HighDensityHydro
 
 		private void RefreshScaledCapacityAndPower(bool initializeDefaultScalingLevel)
 		{
-			if (_powerScalesCapacity && initializeDefaultScalingLevel)
-			{
-				_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(0, _defaultPowerScalingLevel, _maxPowerScalingLevel);
-			}
+			var levelOffset = initializeDefaultScalingLevel ? _defaultPowerScalingLevel : 0;
+			var currentLevel = initializeDefaultScalingLevel ? 0 : _currentPowerScalingLevel;
+			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(currentLevel, levelOffset, _maxPowerScalingLevel, MinimumPowerScalingLevel);
 
 			_plantCapacity = CalculateCurrentPlantCapacity();
 			SyncScaledPowerOutputIfNeeded();
@@ -1163,7 +1163,7 @@ namespace HighDensityHydro
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public void AdjustCapacity(int scalingLevelOffset)
 		{
-			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(_currentPowerScalingLevel, scalingLevelOffset, _maxPowerScalingLevel);
+			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(_currentPowerScalingLevel, scalingLevelOffset, _maxPowerScalingLevel, MinimumPowerScalingLevel);
 			RefreshScaledCapacityAndPower(initializeDefaultScalingLevel: false);
 		}
 

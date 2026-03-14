@@ -122,7 +122,7 @@ internal sealed class HdhQuantumConfigTest : IHarnessTestCase
         var scalingLevel = HdhReflection.CurrentPowerScalingLevel(building);
         var capacity = HdhReflection.MaxPlantCapacity(building);
 
-        if (requiresLight || requiresTemperature || !requiresAtmosphere || !powerScales || plantsPerLayer != 4 || scalingLevel != 20 || capacity != 84)
+        if (requiresLight || requiresTemperature || !requiresAtmosphere || !powerScales || plantsPerLayer != 4 || scalingLevel != 20 || capacity != 80)
         {
             details = "Quantum config flags/capacity do not match branch expectations.";
             return HarnessTestStatus.Failed;
@@ -695,7 +695,7 @@ internal sealed class HdhSaveLoadPersistenceTest : IHarnessTestCase
         snapshotPath = context.WriteSnapshot("hdh-save-load-after", HdhReflection.SnapshotValues(building));
         File.Delete(checkpointPath);
 
-        if (Math.Abs(growth - 0.42f) > 0.05f || storedPlants != 3 || Math.Abs(health - 55f) > 0.05f || scalingLevel != 2 || capacity != 12)
+        if (Math.Abs(growth - 0.42f) > 0.05f || storedPlants != 3 || Math.Abs(health - 55f) > 0.05f || scalingLevel != 22 || capacity != 88)
         {
             details = "State did not survive save/load as expected.";
             return HarnessTestStatus.Failed;

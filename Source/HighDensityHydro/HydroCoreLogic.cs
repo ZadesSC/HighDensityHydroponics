@@ -40,12 +40,12 @@ namespace HighDensityHydro
             return Math.Max(1, plantsPerLayer);
         }
 
-        public static int ClampScalingLevel(int currentLevel, int offset, int maxLevel)
+        public static int ClampScalingLevel(int currentLevel, int offset, int maxLevel, int minLevel = 0)
         {
             var nextLevel = currentLevel + offset;
-            if (nextLevel < 0)
+            if (nextLevel < minLevel)
             {
-                return 0;
+                return minLevel;
             }
 
             if (nextLevel > maxLevel)

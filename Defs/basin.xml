@@ -212,7 +212,7 @@
         <modExtensions>
             <li Class="HighDensityHydro.HydroStatsExtension">
                 <fertility>4.2</fertility>
-                <capacity>4</capacity>
+                <capacity>0</capacity>
                 <requiresLightCheck>false</requiresLightCheck>
                 <requiresTemperatureCheck>false</requiresTemperatureCheck>
                 <requiresAtmosphereCheck>true</requiresAtmosphereCheck>

@@ -56,18 +56,18 @@ namespace HighDensityHydro.UnitTests
         public void CalculateCurrentPlantCapacity_UsesCurrentScalingLevel()
         {
             var building = new Building_HighDensityHydro();
-            SetField(building, "_plantCapacityFromDef", 4);
+            SetField(building, "_plantCapacityFromDef", 0);
             SetField(building, "_currentPowerScalingLevel", 3);
             SetField(building, "_plantsPerLayer", 4);
 
-            Assert.Equal(16, building.CalculateCurrentPlantCapacity());
+            Assert.Equal(12, building.CalculateCurrentPlantCapacity());
         }
 
         [Fact]
         public void AdjustCapacity_UpdatesCapacityEvenWithoutCachedPowerComp()
         {
             var building = new Building_HighDensityHydro();
-            SetField(building, "_plantCapacityFromDef", 4);
+            SetField(building, "_plantCapacityFromDef", 0);
             SetField(building, "_currentPowerScalingLevel", 3);
             SetField(building, "_plantsPerLayer", 4);
             SetField(building, "_maxPowerScalingLevel", 100);
@@ -75,7 +75,7 @@ namespace HighDensityHydro.UnitTests
             building.AdjustCapacity(2);
 
             Assert.Equal(5, building.CurrentPowerScalingLevel);
-            Assert.Equal(24, building.MaxPlantCapacity);
+            Assert.Equal(20, building.MaxPlantCapacity);
         }
 
         [Fact]
@@ -83,7 +83,7 @@ namespace HighDensityHydro.UnitTests
         {
             var building = new Building_HighDensityHydro();
             SetField(building, "_powerScalesCapacity", true);
-            SetField(building, "_plantCapacityFromDef", 4);
+            SetField(building, "_plantCapacityFromDef", 0);
             SetField(building, "_plantsPerLayer", 4);
             SetField(building, "_defaultPowerScalingLevel", 20);
             SetField(building, "_maxPowerScalingLevel", 100);
@@ -91,7 +91,23 @@ namespace HighDensityHydro.UnitTests
             InvokeNonPublic(building, "RefreshScaledCapacityAndPower", true);
 
             Assert.Equal(20, building.CurrentPowerScalingLevel);
-            Assert.Equal(84, building.MaxPlantCapacity);
+            Assert.Equal(80, building.MaxPlantCapacity);
+        }
+
+        [Fact]
+        public void RefreshScaledCapacityAndPower_ClampsQuantumDensityToMinimumOne()
+        {
+            var building = new Building_HighDensityHydro();
+            SetField(building, "_powerScalesCapacity", true);
+            SetField(building, "_plantCapacityFromDef", 0);
+            SetField(building, "_plantsPerLayer", 4);
+            SetField(building, "_currentPowerScalingLevel", 0);
+            SetField(building, "_maxPowerScalingLevel", 100);
+
+            InvokeNonPublic(building, "RefreshScaledCapacityAndPower", false);
+
+            Assert.Equal(1, building.CurrentPowerScalingLevel);
+            Assert.Equal(4, building.MaxPlantCapacity);
         }
 
         [Fact]

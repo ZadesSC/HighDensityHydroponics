@@ -15,6 +15,13 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
+        public void ClampScalingLevel_RespectsMinimumLevelWhenProvided()
+        {
+            Assert.Equal(1, HydroCoreLogic.ClampScalingLevel(1, -5, 10, 1));
+            Assert.Equal(1, HydroCoreLogic.ClampScalingLevel(0, 0, 10, 1));
+        }
+
+        [Fact]
         public void CalculateCapacity_UsesPlantsPerLayer()
         {
             Assert.Equal(4, HydroCoreLogic.CalculateCapacity(4, 0, 4));
