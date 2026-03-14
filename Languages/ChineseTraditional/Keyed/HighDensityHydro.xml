@@ -2,10 +2,10 @@
 <LanguageData>
     <HDH_SettingsCategory>高密度水培</HDH_SettingsCategory>
 
-    <HDH_LightRequirementLabel>光照需求</HDH_LightRequirementLabel>
+    <HDH_DefaultBuiltInSunlampLabel>預設內建太陽燈</HDH_DefaultBuiltInSunlampLabel>
     <HDH_AllowOtherVanillaPlantsLabel>允許其他原版植物</HDH_AllowOtherVanillaPlantsLabel>
 
-    <HDH_LightRequirementTooltip>啟用後，HDH水培種植需要光照。光照閾值取決於植物類型。</HDH_LightRequirementTooltip>
+    <HDH_DefaultBuiltInSunlampTooltip>設定新建HDH水培槽是否預設啟用內建太陽燈。舊存檔會依照舊版光照需求設定自動遷移。</HDH_DefaultBuiltInSunlampTooltip>
     <HDH_AllowOtherVanillaPlantsTooltip>允許玉米、乾草、惡魔絲等部分原版植物在水培槽中生長。</HDH_AllowOtherVanillaPlantsTooltip>
 
     <HDH_NumStoredPlants>儲存植物：{0}</HDH_NumStoredPlants>
@@ -17,6 +17,8 @@
     <HDH_DevIncreaseGrowth>開發：生長提高10%</HDH_DevIncreaseGrowth>
     <HDH_DevSetGrowthMax>開發：將生長設為100%</HDH_DevSetGrowthMax>
     <HDH_DevIncreaseAge>開發：年齡增加1天</HDH_DevIncreaseAge>
+    <HDH_BuiltInSunlampToggle>內建太陽燈</HDH_BuiltInSunlampToggle>
+    <HDH_BuiltInSunlampToggleDesc>切換這台水培槽的內建太陽燈。開啟後會啟用內部生長照明，並提高耗電量。</HDH_BuiltInSunlampToggleDesc>
     <HDH_ResetHydroponics>重設水培槽</HDH_ResetHydroponics>
     <HDH_ResetHydroponicsDesc>清除所有已儲存的生長進度，並移除這台水培槽上目前的所有植物。</HDH_ResetHydroponicsDesc>
 

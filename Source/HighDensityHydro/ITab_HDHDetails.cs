@@ -10,7 +10,7 @@ namespace HighDensityHydro
     {
         public ITab_HDHDetails()
         {
-            size = new Vector2(400f, 400f);
+            size = new Vector2(400f, 405f);
             labelKey = "HDH_ITabLabel";
         }
 
@@ -26,7 +26,7 @@ namespace HighDensityHydro
                 return;
             }
 
-            size.y = building.PowerScalesCapacity ? 400f : 250f;
+            size.y = building.PowerScalesCapacity ? 405f : 255f;
 
             var power = building.GetComp<CompPowerTrader>();
             if (power == null)

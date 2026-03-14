@@ -11,8 +11,11 @@ namespace HighDensityHydro
 {
 	public class Building_HighDensityHydro : Building_PlantGrower, IPlantToGrowSettable
 	{
+		private const string BuiltInSunlampCellLightDefName = "HDH_BuiltInSunlampCellLight";
 		private static Texture2D _resetHydroponicsIcon;
 		private static Texture2D ResetHydroponicsIcon => _resetHydroponicsIcon ??= ContentFinder<Texture2D>.Get("UI/Commands/ResetHydroponics");
+		private static Texture2D _builtInSunlampIcon;
+		private static Texture2D BuiltInSunlampIcon => _builtInSunlampIcon ??= ContentFinder<Texture2D>.Get("Things/Building/Production/LampSun");
 
 		// for graphics drawing
 		private Dictionary<IntVec3, Matrix4x4> _drawMatrixCache = new Dictionary<IntVec3, Matrix4x4>();
@@ -34,6 +37,7 @@ namespace HighDensityHydro
 		IEnumerable<IntVec3> IPlantToGrowSettable.Cells => this.OccupiedRect().Cells;
 		private Building_HighDensityHydro.BayStage _bayStage;
 		private CompPowerTrader _powerCompCached;
+		private List<Thing> _builtInSunlampCellLights = new List<Thing>();
 
 		// plant stuff
 		// I should make a custom plant class or struct
@@ -55,10 +59,24 @@ namespace HighDensityHydro
 		private bool _powerScalesCapacity = false;
 		private float _basePowerIncrease = 50f;
 		private float _capacityExponent = 1.2f;
+		private float _powerConsumptionWhenSunlampOff;
+		private float _powerConsumptionWhenSunlampOn;
+		private float _basePowerIncreaseWhenSunlampOff;
+		private float _basePowerIncreaseWhenSunlampOn;
+		private float _capacityExponentWhenSunlampOff;
+		private float _capacityExponentWhenSunlampOn;
+		private bool _useThresholdPowerCurve;
+		private int _quadraticPowerThreshold = 20;
+		private float _quadraticPowerCoefficient;
+		private int _cubicPowerThreshold = 40;
+		private float _cubicPowerCoefficient;
 		private int _plantsPerLayer = 4;
 		private int _defaultPowerScalingLevel = 0;
 		private int _currentPowerScalingLevel = 0;
 		private int _maxPowerScalingLevel = 100;
+		private bool _builtInSunlampEnabled;
+		private bool _hasBuiltInSunlampSetting;
+		private int MinimumPowerScalingLevel => _powerScalesCapacity ? 1 : 0;
 		
 		
 		public Building_HighDensityHydro()
@@ -82,21 +100,17 @@ namespace HighDensityHydro
 			
 			//TODO: maybe move this somewhere else, should only be called and generated once
 			PlantPosIndices();
-
-			if (!respawningAfterLoad && _powerScalesCapacity)
+			InitializeBuiltInSunlampState(respawningAfterLoad);
+			RefreshScaledCapacityAndPower(initializeDefaultScalingLevel: !respawningAfterLoad);
+			if (!respawningAfterLoad)
 			{
-				_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(0, _defaultPowerScalingLevel, _maxPowerScalingLevel);
-			}
-
-			_plantCapacity = CalculateCurrentPlantCapacity();
-			if (_powerScalesCapacity && PowerComp != null)
-			{
-				PowerComp.PowerOutput = -1 * CalculateCurrentPowerCost();
+				SyncBuiltInSunlampGlowIfNeeded();
 			}
 		}
 		
 		private void LoadConfig()
 		{
+			var defaultPowerConsumption = def.GetCompProperties<CompProperties_Power>()?.PowerConsumption ?? 0f;
 			HydroStatsExtension modExt = def.GetModExtension<HydroStatsExtension>();
 			if (modExt != null)
 			{
@@ -108,9 +122,34 @@ namespace HighDensityHydro
 				_powerScalesCapacity = modExt.powerScalesCapacity;
 				_basePowerIncrease = modExt.basePowerIncrease;
 				_capacityExponent = modExt.capacityExponent;
+				_powerConsumptionWhenSunlampOff = modExt.powerConsumptionWhenSunlampOff >= 0f ? modExt.powerConsumptionWhenSunlampOff : defaultPowerConsumption;
+				_powerConsumptionWhenSunlampOn = modExt.powerConsumptionWhenSunlampOn >= 0f ? modExt.powerConsumptionWhenSunlampOn : _powerConsumptionWhenSunlampOff;
+				_basePowerIncreaseWhenSunlampOff = modExt.basePowerIncreaseWhenSunlampOff >= 0f ? modExt.basePowerIncreaseWhenSunlampOff : _basePowerIncrease;
+				_basePowerIncreaseWhenSunlampOn = modExt.basePowerIncreaseWhenSunlampOn >= 0f ? modExt.basePowerIncreaseWhenSunlampOn : _basePowerIncrease;
+				_capacityExponentWhenSunlampOff = modExt.capacityExponentWhenSunlampOff >= 0f ? modExt.capacityExponentWhenSunlampOff : _capacityExponent;
+				_capacityExponentWhenSunlampOn = modExt.capacityExponentWhenSunlampOn >= 0f ? modExt.capacityExponentWhenSunlampOn : _capacityExponent;
+				_useThresholdPowerCurve = modExt.useThresholdPowerCurve;
+				_quadraticPowerThreshold = modExt.quadraticPowerThreshold;
+				_quadraticPowerCoefficient = modExt.quadraticPowerCoefficient;
+				_cubicPowerThreshold = modExt.cubicPowerThreshold;
+				_cubicPowerCoefficient = modExt.cubicPowerCoefficient;
 				_defaultPowerScalingLevel = modExt.defaultPowerScalingLevel;
 				_maxPowerScalingLevel = modExt.maxPowerScalingLevel;
 				_plantsPerLayer = HydroCoreLogic.SanitizePlantsPerLayer(modExt.plantsPerLayer);
+			}
+			else
+			{
+				_powerConsumptionWhenSunlampOff = defaultPowerConsumption;
+				_powerConsumptionWhenSunlampOn = defaultPowerConsumption;
+				_basePowerIncreaseWhenSunlampOff = _basePowerIncrease;
+				_basePowerIncreaseWhenSunlampOn = _basePowerIncrease;
+				_capacityExponentWhenSunlampOff = _capacityExponent;
+				_capacityExponentWhenSunlampOn = _capacityExponent;
+				_useThresholdPowerCurve = false;
+				_quadraticPowerThreshold = 20;
+				_quadraticPowerCoefficient = 0f;
+				_cubicPowerThreshold = 40;
+				_cubicPowerCoefficient = 0f;
 			}
 		}
 		
@@ -130,6 +169,9 @@ namespace HighDensityHydro
 			Scribe_Values.Look<int>(ref this._plantCapacity, "plantCapacity", 0, false);
 			Scribe_Values.Look<int>(ref this._currentPowerScalingLevel, "currentPowerScalingLevel", 0, false);
 			Scribe_Values.Look<float>(ref this._plantHealth, "plantHealth", -1f, false);
+			Scribe_Values.Look<bool>(ref this._builtInSunlampEnabled, "builtInSunlampEnabled", false, false);
+			Scribe_Values.Look<bool>(ref this._hasBuiltInSunlampSetting, "hasBuiltInSunlampSetting", false, false);
+			Scribe_Collections.Look(ref _builtInSunlampCellLights, "builtInSunlampCellLights", LookMode.Reference);
 			
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
@@ -137,6 +179,15 @@ namespace HighDensityHydro
 				{
 					_plantHealth = _currentPlantDefToGrow?.BaseMaxHitPoints ?? 100f;
 				}
+
+				if (!_hasBuiltInSunlampSetting)
+				{
+					_builtInSunlampEnabled = GetMigratedBuiltInSunlampDefault();
+					_hasBuiltInSunlampSetting = true;
+				}
+
+				_builtInSunlampCellLights ??= new List<Thing>();
+				_builtInSunlampCellLights.RemoveAll(light => light == null);
 			}
 			
 			
@@ -162,6 +213,14 @@ namespace HighDensityHydro
 				text = RemoveInspectLine(text, "GrowSeasonHereNow".Translate().ToString());
 			}
 
+			SyncPowerOutputIfNeeded();
+			if (_powerScalesCapacity)
+			{
+				text = RemoveInspectLineStartingWith(text, "PowerNeeded".Translate().ToString());
+				text = RemoveInspectLineStartingWith(text, "PowerConsumptionMode".Translate().ToString());
+				text += "\n" + "PowerConsumptionMode".Translate() + ": " + CalculateCurrentPowerCost().ToString("F0") + " W";
+			}
+
 			text += "\n" + "HDH_NumStoredPlants".Translate(_numStoredPlants + _numStoredPlantsBuffer);
 
 			if (this._numStoredPlants > 0)
@@ -169,7 +228,7 @@ namespace HighDensityHydro
 				string plantLabel = _currentPlantDefToGrow?.LabelCap ?? "HDH_GenericPlantLabel".Translate().ToString();
 				text += "\n" + "HDH_CurrentPlantGrowth".Translate(plantLabel, string.Format("{0:#0}%", this._curGrowth * 100f));
 
-				if (HDH_Mod.settings.lightRequirement && this._avgGlow >= 0f)
+				if (RequiresLightCheck && this._avgGlow >= 0f)
 				{
 					// "Average Light: {0}%"
 					text += "\n" + "HDH_AverageLight".Translate(string.Format("{0:0}%", this._avgGlow * 100f));
@@ -206,6 +265,20 @@ namespace HighDensityHydro
 
 			return string.Join("\n", lines);
 		}
+
+		private static string RemoveInspectLineStartingWith(string text, string linePrefix)
+		{
+			if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(linePrefix))
+			{
+				return text;
+			}
+
+			var lines = text
+				.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
+				.Where(line => !line.StartsWith(linePrefix, StringComparison.Ordinal));
+
+			return string.Join("\n", lines);
+		}
 		
 		// Add dev gizmos
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
@@ -213,6 +286,18 @@ namespace HighDensityHydro
 		{
 			foreach (var g in base.GetGizmos())
 				yield return g;
+
+			yield return new Command_Toggle
+			{
+				defaultLabel = "HDH_BuiltInSunlampToggle".Translate(),
+				defaultDesc = "HDH_BuiltInSunlampToggleDesc".Translate(),
+				icon = BuiltInSunlampIcon,
+				isActive = () => _builtInSunlampEnabled,
+				toggleAction = delegate()
+				{
+					SetBuiltInSunlampEnabled(!_builtInSunlampEnabled);
+				}
+			};
 
 			yield return new Command_Action
 			{
@@ -304,6 +389,7 @@ namespace HighDensityHydro
 			
 			//TODO: check if we need to call this
 			//base.TickRare();
+			SyncPowerOutputIfNeeded();
 			ApplyVanillaPowerLossDamageToSpawnedPlants(RareTickInterval);
 			if (_bayStage != BayStage.Growing)
 			{
@@ -759,7 +845,7 @@ namespace HighDensityHydro
 			//TODO: check for vacuum as well
 			//TODO: check and track unlit ticks for rotting plants
 			
-			if (HDH_Mod.settings.lightRequirement && _requiresLightCheck)
+			if (RequiresLightCheck)
 			{
 				if (growthRateFromGlow <= 0f)
 				{
@@ -879,8 +965,30 @@ namespace HighDensityHydro
 				KillAllPlantsAndReset();
 			}
 
+			DespawnBuiltInSunlampCellLights();
 			base.DeSpawn(mode);
 			_drawMatrixCache.Clear();
+		}
+
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		public override void PostMapInit()
+		{
+			base.PostMapInit();
+			SyncBuiltInSunlampGlowIfNeeded();
+		}
+
+		protected override void ReceiveCompSignal(string signal)
+		{
+			base.ReceiveCompSignal(signal);
+			switch (signal)
+			{
+			case "PowerTurnedOn":
+			case "PowerTurnedOff":
+			case "FlickedOn":
+			case "FlickedOff":
+				SyncBuiltInSunlampGlowIfNeeded();
+				break;
+			}
 		}
 
 		// Token: 0x0600015B RID: 347
@@ -970,7 +1078,7 @@ namespace HighDensityHydro
 		{
 			_avgGlow = -1f;
 			float growthRateFromGlow = 1f;
-			if (HDH_Mod.settings.lightRequirement && _requiresLightCheck)
+			if (RequiresLightCheck)
 			{
 				float minGlow = plantDef.plant.growMinGlow;
 				float optimalGlow = plantDef.plant.growOptimalGlow;
@@ -987,8 +1095,8 @@ namespace HighDensityHydro
 			}
 
 			_unlitTicks = HydroCoreLogic.UpdateUnlitTicks(
-				HDH_Mod.settings.lightRequirement,
-				_requiresLightCheck,
+				RequiresLightCheck,
+				RequiresLightCheck,
 				growthRateFromGlow,
 				_unlitTicks,
 				LongTickInterval);
@@ -1034,6 +1142,167 @@ namespace HighDensityHydro
 
 			return _numStoredPlants > 0 || _numStoredPlantsBuffer > 0;
 		}
+
+		private void RefreshScaledCapacityAndPower(bool initializeDefaultScalingLevel)
+		{
+			var levelOffset = initializeDefaultScalingLevel ? _defaultPowerScalingLevel : 0;
+			var currentLevel = initializeDefaultScalingLevel ? 0 : _currentPowerScalingLevel;
+			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(currentLevel, levelOffset, _maxPowerScalingLevel, MinimumPowerScalingLevel);
+
+			_plantCapacity = CalculateCurrentPlantCapacity();
+			SyncPowerOutputIfNeeded();
+		}
+
+		private void SyncPowerOutputIfNeeded()
+		{
+			var powerComp = PowerComp;
+			if (powerComp != null)
+			{
+				var expectedPowerOutput = -1f * CalculateCurrentPowerCost();
+				if (!Mathf.Approximately(powerComp.PowerOutput, expectedPowerOutput))
+				{
+					powerComp.PowerOutput = expectedPowerOutput;
+				}
+			}
+
+			SyncBuiltInSunlampGlowIfNeeded();
+		}
+
+		private void SyncBuiltInSunlampGlowIfNeeded()
+		{
+			if (!Spawned || Map == null)
+			{
+				return;
+			}
+
+			if (ShouldEmitBuiltInSunlampLight())
+			{
+				EnsureBuiltInSunlampCellLights();
+				return;
+			}
+
+			DespawnBuiltInSunlampCellLights();
+		}
+
+		private bool ShouldEmitBuiltInSunlampLight()
+		{
+			if (!_builtInSunlampEnabled || !Spawned || Map == null)
+			{
+				return false;
+			}
+
+			if (!FlickUtility.WantsToBeOn(this))
+			{
+				return false;
+			}
+
+			var powerComp = PowerComp;
+			return powerComp == null || powerComp.PowerOn;
+		}
+
+		private void EnsureBuiltInSunlampCellLights()
+		{
+			var helperDef = DefDatabase<ThingDef>.GetNamedSilentFail(BuiltInSunlampCellLightDefName);
+			if (helperDef == null)
+			{
+				return;
+			}
+
+			var expectedCells = this.OccupiedRect().Cells.Where(cell => cell.InBounds(Map)).ToList();
+			if (BuiltInSunlampCellLightsMatch(expectedCells, helperDef))
+			{
+				return;
+			}
+
+			DespawnBuiltInSunlampCellLights();
+			foreach (var cell in expectedCells)
+			{
+				var helperLight = ThingMaker.MakeThing(helperDef);
+				var spawnedLight = GenSpawn.Spawn(helperLight, cell, Map, WipeMode.Vanish);
+				_builtInSunlampCellLights.Add(spawnedLight);
+			}
+		}
+
+		private bool BuiltInSunlampCellLightsMatch(List<IntVec3> expectedCells, ThingDef helperDef)
+		{
+			if (_builtInSunlampCellLights == null || _builtInSunlampCellLights.Count != expectedCells.Count)
+			{
+				return false;
+			}
+
+			var remainingCells = new HashSet<IntVec3>(expectedCells);
+			foreach (var helperLight in _builtInSunlampCellLights)
+			{
+				if (helperLight == null ||
+				    helperLight.Destroyed ||
+				    !helperLight.Spawned ||
+				    helperLight.Map != Map ||
+				    helperLight.def != helperDef ||
+				    !remainingCells.Remove(helperLight.Position))
+				{
+					return false;
+				}
+			}
+
+			return remainingCells.Count == 0;
+		}
+
+		private void DespawnBuiltInSunlampCellLights()
+		{
+			if (_builtInSunlampCellLights == null)
+			{
+				_builtInSunlampCellLights = new List<Thing>();
+				return;
+			}
+
+			foreach (var helperLight in _builtInSunlampCellLights)
+			{
+				if (helperLight != null && !helperLight.Destroyed)
+				{
+					helperLight.Destroy(DestroyMode.Vanish);
+				}
+			}
+
+			_builtInSunlampCellLights.Clear();
+		}
+
+		private void InitializeBuiltInSunlampState(bool respawningAfterLoad)
+		{
+			if (respawningAfterLoad || _hasBuiltInSunlampSetting)
+			{
+				return;
+			}
+
+			_builtInSunlampEnabled = HDH_Mod.settings?.defaultBuiltInSunlampEnabled ?? false;
+			_hasBuiltInSunlampSetting = true;
+		}
+
+		private bool GetMigratedBuiltInSunlampDefault()
+		{
+			if (def?.defName == "HDH_Hydroponics_Quantum")
+			{
+				return true;
+			}
+
+			return HDH_Mod.settings?.defaultBuiltInSunlampEnabled ?? false;
+		}
+
+		private void SetBuiltInSunlampEnabled(bool enabled)
+		{
+			if (_builtInSunlampEnabled == enabled)
+			{
+				return;
+			}
+
+			_builtInSunlampEnabled = enabled;
+			_hasBuiltInSunlampSetting = true;
+			if (enabled)
+			{
+				_unlitTicks = 0;
+			}
+
+			SyncPowerOutputIfNeeded();
+		}
 		
 			[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 			public float PlantCurrentDyingDamagePerTick
@@ -1061,8 +1330,7 @@ namespace HighDensityHydro
 						_currentPlantDefToGrow.plant.LifespanTicks,
 						!_currentPlantDefToGrow.plant.diesToLight &&
 						_currentPlantDefToGrow.plant.dieIfNoSunlight &&
-						HDH_Mod.settings.lightRequirement &&
-						_requiresLightCheck,
+						RequiresLightCheck,
 						_unlitTicks,
 						_requiresAtmosphereCheck,
 						DyingBecauseExposedToVacuum,
@@ -1119,13 +1387,8 @@ namespace HighDensityHydro
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public void AdjustCapacity(int scalingLevelOffset)
 		{
-			if (_powerCompCached == null)
-			{
-				return;
-			}
-			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(_currentPowerScalingLevel, scalingLevelOffset, _maxPowerScalingLevel);
-			_powerCompCached.PowerOutput = -1 * CalculateCurrentPowerCost();
-			_plantCapacity = CalculateCurrentPlantCapacity();
+			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(_currentPowerScalingLevel, scalingLevelOffset, _maxPowerScalingLevel, MinimumPowerScalingLevel);
+			RefreshScaledCapacityAndPower(initializeDefaultScalingLevel: false);
 		}
 
 		public int CalculateCurrentPlantCapacity()
@@ -1142,8 +1405,26 @@ namespace HighDensityHydro
 			var power = _powerCompCached ?? GetComp<CompPowerTrader>();
 			if (power == null)
 				return 0f;
-			
-			return HydroCoreLogic.CalculatePowerCost(this.def.GetCompProperties<CompProperties_Power>().PowerConsumption, _basePowerIncrease, _capacityExponent, scalingLevel);
+
+			if (!_powerScalesCapacity)
+			{
+				return CurrentBasePowerConsumption;
+			}
+
+			if (_useThresholdPowerCurve)
+			{
+				return HydroCoreLogic.CalculateThresholdPowerCost(
+					CurrentBasePowerConsumption,
+					CurrentBasePowerIncrease,
+					CurrentCapacityExponent,
+					scalingLevel,
+					_quadraticPowerThreshold,
+					_quadraticPowerCoefficient,
+					_cubicPowerThreshold,
+					_cubicPowerCoefficient);
+			}
+
+			return HydroCoreLogic.CalculatePowerCost(CurrentBasePowerConsumption, CurrentBasePowerIncrease, CurrentCapacityExponent, scalingLevel);
 		}
 
 		public float CalculateNextPowerCostIncrease()
@@ -1167,5 +1448,8 @@ namespace HighDensityHydro
 		public float CapacityExponent => _capacityExponent;
 		public int PlantsPerLayer => _plantsPerLayer;
 		public int CurrentPowerScalingLevel => _currentPowerScalingLevel;
+		private float CurrentBasePowerConsumption => _builtInSunlampEnabled ? _powerConsumptionWhenSunlampOn : _powerConsumptionWhenSunlampOff;
+		private float CurrentBasePowerIncrease => _builtInSunlampEnabled ? _basePowerIncreaseWhenSunlampOn : _basePowerIncreaseWhenSunlampOff;
+		private float CurrentCapacityExponent => _builtInSunlampEnabled ? _capacityExponentWhenSunlampOn : _capacityExponentWhenSunlampOff;
 	}
 }

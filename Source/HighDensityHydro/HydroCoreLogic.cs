@@ -40,12 +40,12 @@ namespace HighDensityHydro
             return Math.Max(1, plantsPerLayer);
         }
 
-        public static int ClampScalingLevel(int currentLevel, int offset, int maxLevel)
+        public static int ClampScalingLevel(int currentLevel, int offset, int maxLevel, int minLevel = 0)
         {
             var nextLevel = currentLevel + offset;
-            if (nextLevel < 0)
+            if (nextLevel < minLevel)
             {
-                return 0;
+                return minLevel;
             }
 
             if (nextLevel > maxLevel)
@@ -64,6 +64,22 @@ namespace HighDensityHydro
         public static float CalculatePowerCost(float baseConsumption, float basePowerIncrease, float capacityExponent, int scalingLevel)
         {
             return baseConsumption + (basePowerIncrease * Mathf.Pow(capacityExponent, scalingLevel));
+        }
+
+        public static float CalculateThresholdPowerCost(
+            float baseConsumption,
+            float basePowerIncrease,
+            float capacityExponent,
+            int scalingLevel,
+            int quadraticThreshold,
+            float quadraticCoefficient,
+            int cubicThreshold,
+            float cubicCoefficient)
+        {
+            var earlyTerm = basePowerIncrease * Mathf.Pow(capacityExponent, scalingLevel);
+            var quadraticPenalty = quadraticCoefficient * Mathf.Pow(Mathf.Max(0, scalingLevel - quadraticThreshold), 2f);
+            var cubicPenalty = cubicCoefficient * Mathf.Pow(Mathf.Max(0, scalingLevel - cubicThreshold), 3f);
+            return baseConsumption + earlyTerm + quadraticPenalty + cubicPenalty;
         }
 
         public static float CalculateGlowGrowthRate(float averageGlow, float minGlow, float optimalGlow)
