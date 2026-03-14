@@ -73,8 +73,8 @@
             </damageData>
         </graphicData>
         <costList>
-            <Steel>80</Steel>
-            <ComponentIndustrial>1</ComponentIndustrial>
+            <Steel>140</Steel>
+            <ComponentIndustrial>2</ComponentIndustrial>
         </costList>
         <comps>
             <li Class="CompProperties_Forbiddable"/>
@@ -114,9 +114,9 @@
         </graphicData>
         <size>(2,4)</size>
         <costList>
-            <Steel>180</Steel>
+            <Steel>500</Steel>
             <!-- <Plasteel>20</Plasteel> -->
-            <ComponentIndustrial>2</ComponentIndustrial>
+            <ComponentIndustrial>6</ComponentIndustrial>
         </costList>
         <comps>
             <li Class="CompProperties_Forbiddable"/>
@@ -163,9 +163,9 @@
             <Cleanliness>-6</Cleanliness>
         </statBases>
         <costList>
-            <Steel>360</Steel>
-            <Plasteel>20</Plasteel>
-            <ComponentSpacer>2</ComponentSpacer>
+            <Steel>1000</Steel>
+            <Plasteel>60</Plasteel>
+            <ComponentSpacer>4</ComponentSpacer>
         </costList>
         <comps>
             <li Class="CompProperties_Forbiddable"/>
@@ -213,10 +213,10 @@
             <Cleanliness>-6</Cleanliness>
         </statBases>
         <costList>
-            <Steel>500</Steel>
-            <Plasteel>50</Plasteel>
+            <Steel>900</Steel>
+            <Plasteel>120</Plasteel>
             <ComponentIndustrial>4</ComponentIndustrial>
-            <ComponentSpacer>4</ComponentSpacer>
+            <ComponentSpacer>8</ComponentSpacer>
         </costList>
         <comps>
             <li Class="CompProperties_Forbiddable"/>
