@@ -53,6 +53,12 @@ The later tiers trade higher build cost and power demand for huge space compress
 [*] Mods that add more hydroponics-compatible plants: generally compatible
 [/list]
 
+[img]https://imgur.com/UzNFTXA.png[/img]
+
+Performance is really important to me, if you find any issues with performance, please report it.
+
+This mod should be very performant. The hydroponics basins in this mod stores the plants inside as an integer. The hydroponics emulates most features and functions of a vanilla Rimworld plant and mostly only ticks in a long tick during growing. The most performance intensive part is the during the sow phase, as the hydroponics needs to despawn sowed plants and add them to the internal counter. The despawn is the most costly part. Other The other thing to note is the progress display. Other than those two, the mod should barely even know up on the analyzer.
+
 [img]https://i.imgur.com/491fx00.png[/img]
 
 [list]
