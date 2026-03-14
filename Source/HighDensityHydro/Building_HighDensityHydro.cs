@@ -1420,7 +1420,6 @@ namespace HighDensityHydro
 		public float CapacityExponent => _capacityExponent;
 		public int PlantsPerLayer => _plantsPerLayer;
 		public int CurrentPowerScalingLevel => _currentPowerScalingLevel;
-		public bool BuiltInSunlampEnabled => _builtInSunlampEnabled;
 		private float CurrentBasePowerConsumption => _builtInSunlampEnabled ? _powerConsumptionWhenSunlampOn : _powerConsumptionWhenSunlampOff;
 		private float CurrentBasePowerIncrease => _builtInSunlampEnabled ? _basePowerIncreaseWhenSunlampOn : _basePowerIncreaseWhenSunlampOff;
 		private float CurrentCapacityExponent => _builtInSunlampEnabled ? _capacityExponentWhenSunlampOn : _capacityExponentWhenSunlampOff;

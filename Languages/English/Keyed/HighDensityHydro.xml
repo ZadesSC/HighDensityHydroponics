@@ -2,11 +2,9 @@
 <LanguageData>
     <HDH_SettingsCategory>High Density Hydroponics</HDH_SettingsCategory>
 
-    <HDH_LightRequirementLabel>Light requirement</HDH_LightRequirementLabel>
     <HDH_DefaultBuiltInSunlampLabel>Default built-in sun lamp</HDH_DefaultBuiltInSunlampLabel>
     <HDH_AllowOtherVanillaPlantsLabel>Allow other vanilla plants</HDH_AllowOtherVanillaPlantsLabel>
 
-    <HDH_LightRequirementTooltip>Enabling this will require light for plant growth in HDH hydroponics. Light thresholds depend on plant type.</HDH_LightRequirementTooltip>
     <HDH_DefaultBuiltInSunlampTooltip>Sets whether newly built HDH basins start with their built-in sun lamp enabled. Existing saves migrate from the old light requirement setting.</HDH_DefaultBuiltInSunlampTooltip>
     <HDH_AllowOtherVanillaPlantsTooltip>Allow some other vanilla plants like corn, hay, and devilstrand to be able to grow in these hydroponics.</HDH_AllowOtherVanillaPlantsTooltip>
 
@@ -20,12 +18,9 @@
     <HDH_DevSetGrowthMax>Dev: Set growth to 100%</HDH_DevSetGrowthMax>
     <HDH_DevIncreaseAge>Dev: Increase age by 1 day</HDH_DevIncreaseAge>
     <HDH_BuiltInSunlampToggle>Built-in sun lamp</HDH_BuiltInSunlampToggle>
-    <HDH_BuiltInSunlampToggleDesc>Toggle the basin's built-in sun lamp. Turning it on removes the sunlight requirement and increases power usage.</HDH_BuiltInSunlampToggleDesc>
+    <HDH_BuiltInSunlampToggleDesc>Toggle the basin's built-in sun lamp. Turning it on powers the basin's internal grow lights and increases power usage.</HDH_BuiltInSunlampToggleDesc>
     <HDH_ResetHydroponics>Reset hydroponics</HDH_ResetHydroponics>
     <HDH_ResetHydroponicsDesc>Clear all stored progress and remove any plants currently on this hydroponics bay.</HDH_ResetHydroponicsDesc>
-    <HDH_BuiltInSunlampStatus>Built-in sun lamp: {0}</HDH_BuiltInSunlampStatus>
-    <HDH_StateOn>On</HDH_StateOn>
-    <HDH_StateOff>Off</HDH_StateOff>
 
     <HDH_ITabInvalidBuilding>Not a valid HDH building.</HDH_ITabInvalidBuilding>
     <HDH_ITabLabel>Hydroponics</HDH_ITabLabel>
@@ -34,7 +29,6 @@
     <HDH_ITabCurrentBatch>Current batch: {0}</HDH_ITabCurrentBatch>
     <HDH_ITabNextSowingPlant>Next sowing plant: {0}</HDH_ITabNextSowingPlant>
     <HDH_ITabStoredPlants>Stored plants: {0} / {1}</HDH_ITabStoredPlants>
-    <HDH_ITabBuiltInSunlamp>Built-in sun lamp: {0}</HDH_ITabBuiltInSunlamp>
     <HDH_ITabPlantHealth>Plant health: {0} / {1}</HDH_ITabPlantHealth>
     <HDH_ITabPlantHealthNA>Plant health: N/A</HDH_ITabPlantHealthNA>
     <HDH_ITabGrowth>Growth: {0}</HDH_ITabGrowth>
