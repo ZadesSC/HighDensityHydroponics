@@ -24,6 +24,8 @@ public sealed class HighDensityHydroSuiteProvider : IHarnessSuiteProvider
             new HdhSowingToGrowingPhaseTest(),
             new HdhGrowingToHarvestPhaseTest(),
             new HdhHarvestSpawnsStoredPlantsTest(),
+            new HdhHarvestKeepsMaturePlantForPawnHarvestTest(),
+            new HdhHarvestClearsPartiallyEatenSingleHarvestPlantTest(),
             new HdhHarvestToSowingPhaseTest(),
             new HdhHarvestToGrowingRegrowthPhaseTest(),
             new HdhGrowingStageEmptyResetTest(),
@@ -380,6 +382,105 @@ internal sealed class HdhHarvestSpawnsStoredPlantsTest : IHarnessTestCase
         }
 
         details = "Harvest phase spawned stored plants into the hydro footprint before waiting for collection.";
+        return HarnessTestStatus.Passed;
+    }
+}
+
+internal sealed class HdhHarvestKeepsMaturePlantForPawnHarvestTest : IHarnessTestCase
+{
+    private Thing building;
+
+    public string Name => "hdh.harvest-keep-mature";
+
+    public void Start(HarnessTestContext context)
+    {
+        HdhReflection.ClearAll(context.Map);
+        building = HdhReflection.SpawnBuilding("HDH_Hydroponics_Quantum", context.Map);
+        var plantDef = ThingDef.Named("Plant_Rice");
+        HdhReflection.SeedState(
+            building,
+            plantDef,
+            "Harvest",
+            powered: true,
+            storedPlants: 0,
+            growth: 1f,
+            age: 2500,
+            health: plantDef.BaseMaxHitPoints,
+            storedPlantsBuffer: 0,
+            averageHarvestGrowth: 0f);
+        HdhReflection.SpawnPlantOnBuilding(building, plantDef, 1f, 2500);
+    }
+
+    public HarnessTestStatus Tick(HarnessTestContext context, out string details, out string snapshotPath)
+    {
+        HdhReflection.TickRare(building);
+        snapshotPath = context.WriteSnapshot("hdh-harvest-keep-mature", HdhReflection.SnapshotValues(building));
+
+        if (!string.Equals(HdhReflection.BayStageName(building), "Harvest", StringComparison.Ordinal) ||
+            HdhReflection.SpawnedPlantCount(building) != 1)
+        {
+            details = "Harvest phase should leave mature plants spawned so pawns can harvest them.";
+            return HarnessTestStatus.Failed;
+        }
+
+        details = "Harvest phase left mature plants in place for pawn harvest.";
+        return HarnessTestStatus.Passed;
+    }
+}
+
+internal sealed class HdhHarvestClearsPartiallyEatenSingleHarvestPlantTest : IHarnessTestCase
+{
+    private Thing building;
+    private bool clearedPlant;
+
+    public string Name => "hdh.harvest-clear-partial-single";
+
+    public void Start(HarnessTestContext context)
+    {
+        HdhReflection.ClearAll(context.Map);
+        building = HdhReflection.SpawnBuilding("HDH_Hydroponics_Quantum", context.Map);
+        var plantDef = ThingDef.Named("Plant_Rice");
+        HdhReflection.SeedState(
+            building,
+            plantDef,
+            "Harvest",
+            powered: true,
+            storedPlants: 0,
+            growth: 1f,
+            age: 2500,
+            health: plantDef.BaseMaxHitPoints,
+            storedPlantsBuffer: 0,
+            averageHarvestGrowth: 0f);
+        HdhReflection.SpawnPlantOnBuilding(building, plantDef, 0.6f, 2500);
+    }
+
+    public HarnessTestStatus Tick(HarnessTestContext context, out string details, out string snapshotPath)
+    {
+        HdhReflection.TickRare(building);
+
+        if (!clearedPlant)
+        {
+            clearedPlant = true;
+            snapshotPath = context.WriteSnapshot("hdh-harvest-clear-partial-single-cleared", HdhReflection.SnapshotValues(building));
+            if (!string.Equals(HdhReflection.BayStageName(building), "Harvest", StringComparison.Ordinal) ||
+                HdhReflection.SpawnedPlantCount(building) != 0)
+            {
+                details = "Harvest phase should clear partially eaten single-harvest plants before finishing the cycle.";
+                return HarnessTestStatus.Failed;
+            }
+
+            details = "Cleared partially eaten single-harvest plant; waiting for harvest phase completion.";
+            return HarnessTestStatus.Running;
+        }
+
+        snapshotPath = context.WriteSnapshot("hdh-harvest-clear-partial-single", HdhReflection.SnapshotValues(building));
+        if (!string.Equals(HdhReflection.BayStageName(building), "Sowing", StringComparison.Ordinal))
+        {
+            details = "Harvest phase should reset to sowing after the partially eaten single-harvest plant is cleared.";
+            return HarnessTestStatus.Failed;
+        }
+
+        details = "Partially eaten single-harvest plant was cleared and the harvest phase completed.";
         return HarnessTestStatus.Passed;
     }
 }

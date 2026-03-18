@@ -892,6 +892,12 @@ namespace HighDensityHydro
 				{
 					allHarvested = false;
 				}
+
+				if (ShouldClearHarvestPhasePlant(existingPlant, plantDef))
+				{
+					existingPlant.DeSpawn(DestroyMode.Vanish);
+					continue;
+				}
 				
 				if (existingPlant == null && _numStoredPlants > 0)
 				{
@@ -937,6 +943,26 @@ namespace HighDensityHydro
 			_averageHarvestGrowth = completion.AverageHarvestGrowth;
 			_bayStage = BayStage.Growing;
 			MarkPlantsMeshDirty();
+		}
+
+		private static bool ShouldClearHarvestPhasePlant(Plant existingPlant, ThingDef plantDef)
+		{
+			if (existingPlant == null || plantDef?.plant == null)
+			{
+				return false;
+			}
+
+			if (existingPlant.def != plantDef)
+			{
+				return true;
+			}
+
+			if (plantDef.plant.harvestAfterGrowth > 0f)
+			{
+				return false;
+			}
+
+			return existingPlant.Growth < 0.999f;
 		}
 
 		// Token: 0x17000014 RID: 20
