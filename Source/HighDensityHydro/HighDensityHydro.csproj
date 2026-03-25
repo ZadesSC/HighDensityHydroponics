@@ -68,6 +68,7 @@
         <Compile Include="ITab_HDHDetails.cs" />
         <Compile Include="Patch_Command_SetPlantToGrow.cs" />
         <Compile Include="DBHHydroPatch.cs" />
+        <Compile Include="FarmingHysteresisCompat.cs" />
         <Compile Include="HDDefOf.cs" />
         <Compile Include="HDH_Graphics.cs" />
         <Compile Include="HDH_Mod.cs" />

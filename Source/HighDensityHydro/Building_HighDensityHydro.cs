@@ -504,7 +504,12 @@ namespace HighDensityHydro
 				return false;
 			}
 
-			return GetPlantDefToGrow() != null;
+			if (GetPlantDefToGrow() == null)
+			{
+				return false;
+			}
+
+			return FarmingHysteresisCompat.AllowsSowing(this);
 		}
 		
 		// used to draw progress bar
