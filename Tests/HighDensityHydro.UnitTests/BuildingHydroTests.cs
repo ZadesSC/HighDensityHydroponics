@@ -305,31 +305,6 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
-        public void CanAcceptSowNow_RespectsFarmingHysteresisWhenTemperatureChecksAreDisabled()
-        {
-            var building = new Building_HighDensityHydro();
-            var plant = CreatePlantDef(0f);
-            var previousOverride = FarmingHysteresisCompat.AllowSowOverrideForTests;
-
-            SetField(building, "_bayStage", Enum.Parse(typeof(Building_HighDensityHydro).GetNestedType("BayStage", BindingFlags.NonPublic), "Sowing"));
-            SetField(building, "_numStoredPlants", 0);
-            SetField(building, "_plantCapacity", 4);
-            SetField(building, "_requiresTemperatureCheck", false);
-            SetSelectedPlantDef(building, plant);
-
-            try
-            {
-                FarmingHysteresisCompat.AllowSowOverrideForTests = _ => false;
-
-                Assert.False(((IPlantToGrowSettable)building).CanAcceptSowNow());
-            }
-            finally
-            {
-                FarmingHysteresisCompat.AllowSowOverrideForTests = previousOverride;
-            }
-        }
-
-        [Fact]
         public void SetPlantDefToGrow_ThroughInterface_ResetsSowingState()
         {
             var building = new Building_HighDensityHydro();

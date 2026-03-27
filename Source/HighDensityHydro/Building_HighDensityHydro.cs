@@ -494,22 +494,13 @@ namespace HighDensityHydro
 				return false;
 			}
 
-			if (_requiresTemperatureCheck)
-			{
-				return base.CanAcceptSowNow();
-			}
-
-			if (PowerComp != null && !PowerComp.PowerOn)
+			// Vanilla grower sow checks only contribute the power gate here.
+			if (!base.CanAcceptSowNow())
 			{
 				return false;
 			}
 
-			if (GetPlantDefToGrow() == null)
-			{
-				return false;
-			}
-
-			return FarmingHysteresisCompat.AllowsSowing(this);
+			return GetPlantDefToGrow() != null;
 		}
 		
 		// used to draw progress bar
