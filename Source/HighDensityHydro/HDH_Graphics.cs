@@ -14,5 +14,9 @@ namespace HighDensityHydro
         public static readonly Material HDHBarFilledMat = SolidColorMaterials.SimpleSolidColorMaterial(new Color(0.2f, 0.85f, 0.2f), false);
 
         public static readonly Material HDHBarUnfilledMat = SolidColorMaterials.SimpleSolidColorMaterial(new Color(0.3f, 0.3f, 0.3f), false);
+
+        public static readonly Texture2D ResetHydroponicsIcon = ContentFinder<Texture2D>.Get("UI/Commands/ResetHydroponics");
+
+        public static readonly Texture2D BuiltInSunlampIcon = ContentFinder<Texture2D>.Get("Things/Building/Production/LampSun");
     }
 }

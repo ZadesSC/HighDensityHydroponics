@@ -12,10 +12,6 @@ namespace HighDensityHydro
 	public class Building_HighDensityHydro : Building_PlantGrower, IPlantToGrowSettable
 	{
 		private const string BuiltInSunlampCellLightDefName = "HDH_BuiltInSunlampCellLight";
-		private static Texture2D _resetHydroponicsIcon;
-		private static Texture2D ResetHydroponicsIcon => _resetHydroponicsIcon ??= ContentFinder<Texture2D>.Get("UI/Commands/ResetHydroponics");
-		private static Texture2D _builtInSunlampIcon;
-		private static Texture2D BuiltInSunlampIcon => _builtInSunlampIcon ??= ContentFinder<Texture2D>.Get("Things/Building/Production/LampSun");
 
 		// for graphics drawing
 		private Dictionary<IntVec3, Matrix4x4> _drawMatrixCache = new Dictionary<IntVec3, Matrix4x4>();
@@ -291,7 +287,7 @@ namespace HighDensityHydro
 			{
 				defaultLabel = "HDH_BuiltInSunlampToggle".Translate(),
 				defaultDesc = "HDH_BuiltInSunlampToggleDesc".Translate(),
-				icon = BuiltInSunlampIcon,
+				icon = HDH_Graphics.BuiltInSunlampIcon,
 				isActive = () => _builtInSunlampEnabled,
 				toggleAction = delegate()
 				{
@@ -303,7 +299,7 @@ namespace HighDensityHydro
 			{
 				defaultLabel = "HDH_ResetHydroponics".Translate(),
 				defaultDesc = "HDH_ResetHydroponicsDesc".Translate(),
-				icon = ResetHydroponicsIcon,
+				icon = HDH_Graphics.ResetHydroponicsIcon,
 				action = delegate()
 				{
 					KillAllPlantsAndReset();

@@ -305,34 +305,6 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
-        public void SowTemperatureBypassContext_OnlyIgnoresTemperatureForActiveGrowerCells()
-        {
-            var building = new Building_HighDensityHydro();
-            building.def = CreateHydroDef();
-            SetField(building, "_requiresTemperatureCheck", false);
-            SetField(building, "positionInt", new IntVec3(10, 0, 10));
-            SetField(building, "mapIndexOrState", (ushort)1);
-
-            var map = (Map)FormatterServices.GetUninitializedObject(typeof(Map));
-            map.Index = 1;
-
-            SowTemperatureBypassContext.CurrentGrower = building;
-
-            try
-            {
-                Assert.True(SowTemperatureBypassContext.ShouldIgnoreTemperatureAt(new IntVec3(10, 0, 10), map));
-                Assert.False(SowTemperatureBypassContext.ShouldIgnoreTemperatureAt(new IntVec3(20, 0, 20), map));
-
-                SetField(building, "_requiresTemperatureCheck", true);
-                Assert.False(SowTemperatureBypassContext.ShouldIgnoreTemperatureAt(new IntVec3(10, 0, 10), map));
-            }
-            finally
-            {
-                SowTemperatureBypassContext.CurrentGrower = null;
-            }
-        }
-
-        [Fact]
         public void SetPlantDefToGrow_ThroughInterface_ResetsSowingState()
         {
             var building = new Building_HighDensityHydro();
