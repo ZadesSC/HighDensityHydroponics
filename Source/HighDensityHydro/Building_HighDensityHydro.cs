@@ -78,6 +78,13 @@ namespace HighDensityHydro
 		public Building_HighDensityHydro()
 		{
 		}
+
+		public override void PostMake()
+		{
+			base.PostMake();
+			LoadConfig();
+			InitializeDefaultPowerScalingForNewBuild();
+		}
 		
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
@@ -97,7 +104,7 @@ namespace HighDensityHydro
 			//TODO: maybe move this somewhere else, should only be called and generated once
 			PlantPosIndices();
 			InitializeBuiltInSunlampState(respawningAfterLoad);
-			RefreshScaledCapacityAndPower(initializeDefaultScalingLevel: !respawningAfterLoad);
+			RefreshScaledCapacityAndPower(initializeDefaultScalingLevel: false);
 			if (!respawningAfterLoad)
 			{
 				SyncBuiltInSunlampGlowIfNeeded();
@@ -1293,6 +1300,16 @@ namespace HighDensityHydro
 
 			_builtInSunlampEnabled = HDH_Mod.settings?.defaultBuiltInSunlampEnabled ?? false;
 			_hasBuiltInSunlampSetting = true;
+		}
+
+		private void InitializeDefaultPowerScalingForNewBuild()
+		{
+			if (!_powerScalesCapacity)
+			{
+				return;
+			}
+
+			_currentPowerScalingLevel = HydroCoreLogic.ClampScalingLevel(0, _defaultPowerScalingLevel, _maxPowerScalingLevel, MinimumPowerScalingLevel);
 		}
 
 		private bool GetMigratedBuiltInSunlampDefault()
