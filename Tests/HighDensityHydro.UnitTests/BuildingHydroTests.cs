@@ -110,6 +110,22 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
+        public void RefreshScaledCapacityAndPower_PreservesExistingScalingLevelWhenNotInitializingDefault()
+        {
+            var building = new Building_HighDensityHydro();
+            SetField(building, "_powerScalesCapacity", true);
+            SetField(building, "_plantCapacityFromDef", 0);
+            SetField(building, "_plantsPerLayer", 4);
+            SetField(building, "_currentPowerScalingLevel", 22);
+            SetField(building, "_maxPowerScalingLevel", 100);
+
+            InvokeNonPublic(building, "RefreshScaledCapacityAndPower", false);
+
+            Assert.Equal(22, building.CurrentPowerScalingLevel);
+            Assert.Equal(88, building.MaxPlantCapacity);
+        }
+
+        [Fact]
         public void RefreshScaledCapacityAndPower_ClampsQuantumDensityToMinimumOne()
         {
             var building = new Building_HighDensityHydro();
@@ -123,6 +139,30 @@ namespace HighDensityHydro.UnitTests
 
             Assert.Equal(1, building.CurrentPowerScalingLevel);
             Assert.Equal(4, building.MaxPlantCapacity);
+        }
+
+        [Fact]
+        public void InitializeDefaultPowerScalingForNewBuild_UsesConfiguredDefaultLevel()
+        {
+            var building = new Building_HighDensityHydro();
+            var def = CreateHydroDef();
+            SetMember(def, "modExtensions", new List<DefModExtension>
+            {
+                new HydroStatsExtension
+                {
+                    capacity = 0,
+                    powerScalesCapacity = true,
+                    plantsPerLayer = 4,
+                    defaultPowerScalingLevel = 20,
+                    maxPowerScalingLevel = 100,
+                }
+            });
+            building.def = def;
+
+            InvokeNonPublic(building, "LoadConfig");
+            InvokeNonPublic(building, "InitializeDefaultPowerScalingForNewBuild");
+
+            Assert.Equal(20, building.CurrentPowerScalingLevel);
         }
 
         [Fact]
