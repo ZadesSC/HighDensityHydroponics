@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>HighDensityHydro</AssemblyName>
+    <RootNamespace>HighDensityHydro</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <OutputPath>../../1.7/Assemblies</OutputPath>
+    <DebugType>portable</DebugType>
+    <RimWorldDir Condition="'$(RimWorldDir)' == '' and '$(RIMWORLD_DIR)' != ''">$(RIMWORLD_DIR)</RimWorldDir>
+    <RimWorldDir Condition="'$(RimWorldDir)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">$(HOME)/Library/Application Support/Steam/steamapps/common/RimWorld</RimWorldDir>
+    <RimWorldAssemblyDir Condition="'$(RimWorldAssemblyDir)' == '' and '$(RIMWORLD_ASSEMBLY_DIR)' != ''">$(RIMWORLD_ASSEMBLY_DIR)</RimWorldAssemblyDir>
+    <RimWorldAssemblyDir Condition="'$(RimWorldAssemblyDir)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">$(RimWorldDir)/RimWorld.app/Contents/MacOS</RimWorldAssemblyDir>
+    <HarmonyDllPath Condition="'$(HarmonyDllPath)' == '' and '$(HARMONY_DLL_PATH)' != ''">$(HARMONY_DLL_PATH)</HarmonyDllPath>
+    <HarmonyDllPath Condition="'$(HarmonyDllPath)' == '' and $([MSBuild]::IsOSPlatform('OSX'))">$(HOME)/Library/Application Support/Steam/steamapps/workshop/content/294100/2009463077/1.7/Assemblies/0Harmony.dll</HarmonyDllPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(RimWorldAssemblyDir)/Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityStubs">
+      <HintPath>$(RimWorldAssemblyDir)/UnityStubs.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Waylith">
+      <HintPath>$(RimWorldAssemblyDir)/Waylith.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(HarmonyDllPath)</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+  <Target Name="ValidateGameReferences" BeforeTargets="ResolveReferences">
+    <Error Condition="!Exists('$(RimWorldAssemblyDir)/Assembly-CSharp.dll')" Text="Set RimWorldAssemblyDir (or RIMWORLD_ASSEMBLY_DIR) to the RimWorld 1.7 assembly directory." />
+    <Error Condition="!Exists('$(HarmonyDllPath)')" Text="Set HarmonyDllPath (or HARMONY_DLL_PATH) to Harmony's 1.7/Assemblies/0Harmony.dll." />
+  </Target>
+</Project>

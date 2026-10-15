@@ -9,7 +9,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <OutputPath>../../Assemblies</OutputPath>
+    <OutputPath>../../1.6/Assemblies</OutputPath>
     <DebugType>portable</DebugType>
     <RimWorldDir Condition="'$(RimWorldDir)' == '' and '$(RIMWORLD_DIR)' != ''">$(RIMWORLD_DIR)</RimWorldDir>
     <RimWorldDir Condition="'$(RimWorldDir)' == ''">G:\Games\Steam\steamapps\common\RimWorld</RimWorldDir>
