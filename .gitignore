@@ -52,3 +52,5 @@ Tests/*/Assemblies/
 
 # SDK build symbols
 Assemblies/*.pdb
+1.6/Assemblies/*.pdb
+1.7/Assemblies/*.pdb
