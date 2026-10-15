@@ -1,0 +1,81 @@
+name: Create release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional version, e.g. v2026.10.15 or v2026.10.15.1 (default: today in Los Angeles)'
+        required: false
+        type: string
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: create-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event_name == 'push' || github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Select date version
+        id: version
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          python3 - <<'PY'
+          import datetime
+          import os
+          import re
+          from zoneinfo import ZoneInfo
+
+          if os.environ['GITHUB_EVENT_NAME'] == 'push':
+              version = os.environ['GITHUB_REF_NAME']
+          else:
+              version = os.environ['REQUESTED_VERSION'].strip() or datetime.datetime.now(
+                  ZoneInfo('America/Los_Angeles')).strftime('v%Y.%m.%d')
+          if not re.fullmatch(r'v\d{4}\.\d{2}\.\d{2}(?:\.[1-9]\d*)?', version):
+              raise SystemExit('Use vYYYY.MM.DD or vYYYY.MM.DD.1 for an additional release.')
+          datetime.datetime.strptime(version[1:11], '%Y.%m.%d')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'tag={version}\n')
+          PY
+
+      - name: Validate release commit
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/master
+          if git rev-parse --verify "refs/tags/$VERSION" >/dev/null 2>&1; then
+            test "$(git rev-parse "refs/tags/$VERSION^{commit}")" = "$GITHUB_SHA"
+          fi
+
+      - name: Package committed mod files
+        env:
+          VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          test -s 1.6/Assemblies/HighDensityHydro.dll
+          test -s 1.7/Assemblies/HighDensityHydro.dll
+          mkdir -p dist
+          git archive --format=zip \
+            --prefix="HighDensityHydro-$VERSION/" \
+            --output="dist/HighDensityHydro-$VERSION.zip" HEAD -- \
+            1.6 1.7 About Defs Languages Patches Textures LICENSE LoadFolders.xml
+
+      - name: Publish release with ZIP and generated notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          gh release create "$VERSION" "dist/HighDensityHydro-$VERSION.zip" \
+            --target "$GITHUB_SHA" --title "$VERSION" --generate-notes
