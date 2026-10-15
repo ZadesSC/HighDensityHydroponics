@@ -8,7 +8,7 @@
 		<li>1.7</li>
     </supportedVersions>
 	<packageId>MapleApple.HighDensityHydroponics.Fixed.ZouHb.zades</packageId>
-	<description>High Density Hydroponics for RimWorld 1.6 and 1.7.</description>
+	<description>High Density Hydroponics</description>
 	<loadAfter>
 		<li>brrainz.harmony</li>
 		<li>dubwise.dubsbadhygiene</li>
