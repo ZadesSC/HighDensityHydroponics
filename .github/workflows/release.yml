@@ -26,8 +26,8 @@ jobs:
   release:
     permissions:
       contents: write
-    uses: ZadesSC/HighDensityHydroponics/.github/workflows/rimworld-release.yml@0a30614313d103f0b2fa23da45a8b0b8cd171ccb
+    uses: ZadesSC/HighDensityHydroponics/.github/workflows/rimworld-release.yml@38ed54a44ad945a31a98b4e622e375630cbe1b8f
     with:
       channel: ${{ github.event_name == 'push' && (contains(github.ref_name, '-') && 'prerelease' || 'stable') || inputs.channel }}
       version: ${{ inputs.version || '' }}
-      tooling-ref: 0a30614313d103f0b2fa23da45a8b0b8cd171ccb
+      tooling-ref: 38ed54a44ad945a31a98b4e622e375630cbe1b8f
