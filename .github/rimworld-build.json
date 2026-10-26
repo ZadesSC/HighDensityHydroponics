@@ -6,8 +6,6 @@
   "assemblyMode": "compile",
   "commands": [
     [
-      "python3",
-      ".github/diagnose-restore.py",
       "dotnet",
       "build",
       "Source/HighDensityHydro/HighDensityHydro.SDK.csproj",
