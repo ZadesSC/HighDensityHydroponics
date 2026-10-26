@@ -1,0 +1,95 @@
+name: Shared RimWorld build
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        type: string
+        required: true
+      version:
+        type: string
+        default: ''
+      tooling-ref:
+        type: string
+        required: true
+    outputs:
+      version:
+        value: ${{ jobs.package.outputs.version }}
+      artifact:
+        value: ${{ jobs.package.outputs.artifact }}
+      commit:
+        value: ${{ jobs.package.outputs.commit }}
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    outputs:
+      version: ${{ steps.identity.outputs.version }}
+      artifact: ${{ steps.identity.outputs.artifact }}
+      commit: ${{ steps.commit.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check shared tooling pin
+        env:
+          TOOLING_REF: ${{ inputs.tooling-ref }}
+        run: '[[ "$TOOLING_REF" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ZadesSC/HighDensityHydroponics
+          ref: ${{ inputs.tooling-ref }}
+          path: .rimworld-ci
+          persist-credentials: false
+          sparse-checkout: tools/ci
+      - name: Check shared build contract
+        run: python3 -m unittest discover -s .rimworld-ci/tools/ci -p 'test_*.py'
+      - name: Select build identity
+        id: identity
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: python3 .rimworld-ci/tools/ci/rimworld_build.py select-version --channel "$CHANNEL" --version "$REQUESTED_VERSION"
+      - name: Record tested commit
+        id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        if: steps.identity.outputs.needs-dotnet == 'true'
+        with:
+          dotnet-version: '10.0.x'
+      - name: Validate, build, and package
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          VERSION: ${{ steps.identity.outputs.version }}
+          RIMWORLD_TOOLING_REF: ${{ inputs.tooling-ref }}
+        run: python3 .rimworld-ci/tools/ci/rimworld_build.py build --channel "$CHANNEL" --version "$VERSION"
+      - name: Preserve package and identity
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ${{ steps.identity.outputs.artifact }}
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS
+            dist/BUILD_INFO.json
+            release-notes.txt
+          if-no-files-found: error
+          retention-days: 30
+      - name: Summarize download
+        env:
+          ARTIFACT: ${{ steps.identity.outputs.artifact }}
+          CHANNEL: ${{ inputs.channel }}
+        run: |
+          python3 - <<'PY'
+          import json, os
+          info = json.load(open('dist/BUILD_INFO.json'))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+              summary.write(f"### {os.environ['ARTIFACT']}\n\nChannel: {os.environ['CHANNEL']}\n\n")
+              summary.write(f"RimWorld: {', '.join(info['supportedVersions'])}\n\nCommit: `{info['commit']}`\n\n")
+              summary.write(f"Assembly mode: `{info['assemblyMode']}`\n\nSHA256: `{info['packageSha256']}`\n")
+          PY
+
