@@ -19,6 +19,8 @@ on:
         value: ${{ jobs.package.outputs.artifact }}
       commit:
         value: ${{ jobs.package.outputs.commit }}
+      slug:
+        value: ${{ jobs.package.outputs.slug }}
 
 permissions:
   contents: read
@@ -31,6 +33,7 @@ jobs:
       version: ${{ steps.identity.outputs.version }}
       artifact: ${{ steps.identity.outputs.artifact }}
       commit: ${{ steps.commit.outputs.sha }}
+      slug: ${{ steps.identity.outputs.slug }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -68,14 +71,13 @@ jobs:
           RIMWORLD_BUILD_VERSION: ${{ steps.identity.outputs.version }}
           RIMWORLD_TOOLING_REF: ${{ inputs.tooling-ref }}
         run: python3 .rimworld-ci/tools/ci/rimworld_build.py build --channel "$CHANNEL" --version "$RIMWORLD_BUILD_VERSION"
-      - name: Preserve package and identity
+      - name: Preserve package and checksums
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ steps.identity.outputs.artifact }}
           path: |
             dist/*.zip
             dist/SHA256SUMS
-            dist/BUILD_INFO.json
             release-notes.txt
           if-no-files-found: error
           retention-days: 30
@@ -86,10 +88,12 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os
-          info = json.load(open('dist/BUILD_INFO.json'))
+          info = json.load(open('.rimworld-ci/build-info.json'))
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
               summary.write(f"### {os.environ['ARTIFACT']}\n\nChannel: {os.environ['CHANNEL']}\n\n")
               summary.write(f"RimWorld: {', '.join(info['supportedVersions'])}\n\nCommit: `{info['commit']}`\n\n")
               summary.write(f"Assembly mode: `{info['assemblyMode']}`\n\nSHA256: `{info['packageSha256']}`\n")
+              summary.write('\n<details><summary>Build details</summary>\n\n```json\n')
+              summary.write(json.dumps(info, indent=2) + '\n```\n\n</details>\n')
           PY
 

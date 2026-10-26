@@ -126,12 +126,19 @@ class BuildContract(unittest.TestCase):
         self.assertEqual(first['packageSha256'], second['packageSha256'])
         with zipfile.ZipFile(archive) as bundle:
             self.assertTrue(all(name.startswith('Example/') for name in bundle.namelist()))
-            inside = json.loads(bundle.read('Example/BUILD_INFO.json'))
-            self.assertEqual(inside['commit'], build.git(self.root, 'rev-parse', 'HEAD'))
-            self.assertNotIn('packageSha256', inside)
+            self.assertFalse(any(Path(name).name.upper() == 'BUILD_INFO.JSON' for name in bundle.namelist()))
+        internal = json.loads((self.root / '.rimworld-ci/build-info.json').read_text())
+        self.assertEqual(internal['commit'], build.git(self.root, 'rev-parse', 'HEAD'))
+        self.assertEqual(internal['packageSha256'], first['packageSha256'])
+        self.assertEqual({p.name for p in (self.root / 'dist').iterdir()}, {first['package'], 'SHA256SUMS'})
         sums = (self.root / 'dist/SHA256SUMS').read_text()
         self.assertIn(first['packageSha256'] + '  ' + first['package'], sums)
-        self.assertIn('  BUILD_INFO.json', sums)
+        self.assertEqual(len(sums.splitlines()), 1)
+
+    def test_legacy_build_info_is_excluded_from_allowed_folders(self):
+        (self.root / 'About/BUILD_INFO.json').write_text('{"old": true}')
+        files, _ = build.collect_files(self.root, self.cfg)
+        self.assertNotIn('About/BUILD_INFO.json', files)
 
 
 if __name__ == '__main__':

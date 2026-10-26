@@ -185,7 +185,8 @@ def collect_files(root, cfg):
     for path in sorted(paths):
         relative = path.relative_to(root).as_posix()
         if (EXCLUDED & set(PurePosixPath(relative).parts)
-                or path.suffix.lower() in ('.pdb', '.mdb') or relative.endswith('.deps.json')):
+                or path.suffix.lower() in ('.pdb', '.mdb') or relative.endswith('.deps.json')
+                or path.name.upper() == 'BUILD_INFO.JSON'):
             continue
         safe_path(root, relative)
         if path.is_file():
@@ -243,7 +244,6 @@ def package(root, cfg, version, channel, env=None):
     if env.get('GITHUB_RUN_ID'):
         info['runUrl'] = (f'{env["GITHUB_SERVER_URL"]}/{env["GITHUB_REPOSITORY"]}'
                           f'/actions/runs/{env["GITHUB_RUN_ID"]}')
-    files['BUILD_INFO.json'] = dump(info).encode()
     output = root / 'dist'
     # Only our generated dist directory is cleared, after any legacy validation/build steps.
     if output.is_symlink():
@@ -265,10 +265,11 @@ def package(root, cfg, version, channel, env=None):
             if archive.read(cfg['slug'] + '/' + name) != data:
                 raise ValueError(f'ZIP entry verification failed: {name}')
     info.update(package=archive_path.name, packageSha256=digest(archive_path), fileCount=len(files))
-    (output / 'BUILD_INFO.json').write_text(dump(info))
-    # Cover both the installable ZIP and external build metadata.
-    (output / 'SHA256SUMS').write_text(''.join(f'{digest(p)}  {p.name}\n'
-                                            for p in [archive_path, output / 'BUILD_INFO.json']))
+    # Build details are for the Actions summary, never a distribution asset.
+    internal = root / '.rimworld-ci'
+    internal.mkdir(exist_ok=True)
+    (internal / 'build-info.json').write_text(dump(info))
+    (output / 'SHA256SUMS').write_text(f'{digest(archive_path)}  {archive_path.name}\n')
     notes = [f'RimWorld: {", ".join(cfg["supportedVersions"])}.',
              f'Install: extract `{archive_path.name}` into your RimWorld Mods directory.',
              'Replace the existing mod folder before installing; keep only one copy enabled.',
@@ -298,6 +299,7 @@ def main():
         if os.environ.get('GITHUB_OUTPUT'):
             with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
                 output.write(f'version={version}\nartifact={cfg["slug"]}-{version}\n')
+                output.write(f'slug={cfg["slug"]}\n')
                 output.write(f'needs-dotnet={str(cfg.get("needsDotnet", False)).lower()}\n')
         print(version)
         return
