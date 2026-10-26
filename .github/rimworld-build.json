@@ -12,7 +12,8 @@
       "-c",
       "Release",
       "-p:RimWorldDir={references}/game16",
-      "-p:HarmonyDllPath={references}/harmony16/0Harmony.dll"
+      "-p:HarmonyDllPath={references}/harmony16/0Harmony.dll",
+      "-v:diag"
     ],
     [
       "dotnet",
