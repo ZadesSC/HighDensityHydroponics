@@ -6,14 +6,15 @@
   "assemblyMode": "compile",
   "commands": [
     [
+      "python3",
+      ".github/diagnose-restore.py",
       "dotnet",
       "build",
       "Source/HighDensityHydro/HighDensityHydro.SDK.csproj",
       "-c",
       "Release",
       "-p:RimWorldDir={references}/game16",
-      "-p:HarmonyDllPath={references}/harmony16/0Harmony.dll",
-      "-v:diag"
+      "-p:HarmonyDllPath={references}/harmony16/0Harmony.dll"
     ],
     [
       "dotnet",
