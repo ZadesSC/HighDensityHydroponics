@@ -11,7 +11,7 @@ Shared implementation lives in **ZadesSC/HighDensityHydroponics**:
 - `tools/ci/rimworld_build.py`: standard-library Python implementation of version selection, assembly validation, packaging, and metadata.
 - `tools/ci/test_rimworld_build.py`: contract/regression tests, run in each build.
 
-The deployed shared implementation is pinned to **`b1568f2acc098c2c3b89cdacea96a2b18ebe929c`**. Both the reusable-workflow `uses: ...@SHA` and its `tooling-ref: SHA` input must contain this same reviewed full commit SHA. The release workflow's local reference to the build workflow resolves at the shared commit automatically. The helper checkout retrieves only `tools/ci` from that commit.
+The deployed shared implementation is pinned to **`25c60977b5dbd240e3624ea963e734699139cb43`**. Both the reusable-workflow `uses: ...@SHA` and its `tooling-ref: SHA` input must contain this same reviewed full commit SHA. The release workflow's local reference to the build workflow resolves at the shared commit automatically. The helper checkout retrieves only `tools/ci` from that commit.
 
 Each consumer repository has:
 
@@ -54,9 +54,9 @@ Development identity contains Los Angeles date, workflow run number, run attempt
 
 Stable/prerelease tags use `vYYYY.MM.DD[.N]`, with `-alpha.N`, `-beta.N`, or `-rc.N` for prereleases. Dates are validated. Blank manual versions use the current date in `America/Los_Angeles`, allocating the next unused stable suffix or beta number from existing tags. Explicit versions reject an existing tag; a tag-triggered run accepts its already-existing tag only at the packaged commit. Release publication is serialized within the repository. Concurrent pending release requests can be replaced by GitHub's concurrency scheduling; check the run rather than assuming every queued request publishes.
 
-Mod release version and supported RimWorld versions are separate. Normally distribute all supported game versions together and describe them in notes and `BUILD_INFO.json`. Do not put `1.6-1.7` in filenames or change package IDs/DLL names to match the slug.
+Mod release version and supported RimWorld versions are separate. Normally distribute all supported game versions together and describe them in release notes and the Actions build summary. Do not put `1.6-1.7` in filenames or change package IDs/DLL names to match the slug.
 
-Existing semantic versions in `About.xml` and project files are preserved as internal mod/assembly versions. Calendar tags identify the distribution; they do not replace compiler/NuGet versions. `BUILD_INFO.json` includes `modVersion` separately. Existing historical releases/tags retain their original names.
+Existing semantic versions in `About.xml` and project files are preserved as internal mod/assembly versions. Calendar tags identify the distribution; they do not replace compiler/NuGet versions. The internal build summary includes `modVersion` separately. Existing historical releases/tags retain their original names.
 
 ## Triggers and release policy
 
@@ -82,7 +82,6 @@ The release commands publish actual GitHub releases. Keep that side effect in sc
 dist/
   ModSlug-vYYYY.MM.DD.zip
   SHA256SUMS
-  BUILD_INFO.json
 
 Inside the ZIP:
   ModSlug/
@@ -90,18 +89,19 @@ Inside the ZIP:
     LoadFolders.xml       # if the project uses it
     <runtime folders appropriate to this mod>
     <license/readme/credits files where present>
-    BUILD_INFO.json
 ```
 
 The extracted folder is always `ModSlug/`, independent of version/channel. Players should replace the previous folder before installing so removed files do not linger. Source archives automatically supplied by GitHub are not the supported installable download.
 
 Packaging uses a project allowlist. It excludes `Source`, historical misspelling `Souce`, `packages`, `bin`, `obj`, `.git`, Python caches, symbols, and `.deps.json`. No third-party DLL can be included unless listed as a project's own runtime assembly. Keep that list restricted to the mod's own assemblies. Tests, evidence, workflow tooling, reference DLLs, and development docs are outside the allowlist. Required license/credit notices remain included. If separate source distributions become necessary, add them explicitly rather than expanding the runtime ZIP to the entire repository.
 
-Every included XML file must parse. `About.xml` supported versions must match the config. If present, `LoadFolders.xml` must map exactly those versions, and every selected content folder must exist in the package, including conditional integrations. Required runtime DLLs must exist and be nonempty. The ZIP is reopened to verify CRC, entry names, and file bytes. Fixed timestamps, sorted entries, and fixed file permissions make the archive reproducible for identical content and metadata. Different run IDs/attempts intentionally change metadata and the ZIP hash.
+Every included XML file must parse. `About.xml` supported versions must match the config. If present, `LoadFolders.xml` must map exactly those versions, and every selected content folder must exist in the package, including conditional integrations. Required runtime DLLs must exist and be nonempty. The ZIP is reopened to verify CRC, entry names, and file bytes. Fixed timestamps, sorted entries, and fixed file permissions make the archive reproducible for identical runtime content. Run metadata is outside the ZIP, so it does not change the ZIP hash.
 
-Build info inside the ZIP records the commit, ref, channel, supported game versions, internal mod version, assembly provenance/hashes, reference-package versions, tooling commit, run identity/URL, and PR head when applicable. The external copy adds the final ZIP filename/hash and file count, avoiding a self-referential hash. `SHA256SUMS` covers both the ZIP and external build-info file.
+**Do not distribute `BUILD_INFO.json`.** Neither mod ZIPs, downloadable Actions artifacts, nor GitHub release assets contain it. Legacy copies under allowlisted content folders are explicitly excluded. Demigryphs' standalone dev packager follows the same policy.
 
-The Actions artifact also contains `release-notes.txt` and preserves the `dist/` directory. The publisher downloads it, verifies `SHA256SUMS`, and uploads the ZIP, checksums, and external metadata. It does not check out source or rebuild. Notes state compatibility, installation, commit, dependency names, and assembly mode, followed by generated GitHub release notes.
+The helper temporarily writes `.rimworld-ci/build-info.json` for the Actions job summary only. It records commit, ref, channel, supported game versions, internal mod version, assembly provenance/hashes, reference-package versions, tooling commit, run identity/URL, PR head, and final ZIP hash/file count. This internal file is not uploaded. `SHA256SUMS` covers only the mod ZIP.
+
+The Actions artifact contains the mod ZIP, `SHA256SUMS`, and `release-notes.txt`, preserving the `dist/` directory. The publisher downloads it, verifies the checksum, and uploads only the ZIP and checksums. It obtains the mod slug from a workflow output, so it does not depend on a downloadable metadata file. It does not check out source or rebuild. Notes state compatibility, installation, commit, dependency names, and assembly mode, followed by generated GitHub release notes.
 
 ## Adding another mod
 
@@ -169,9 +169,32 @@ To update shared tooling: change/test the helper and reusable workflows in Hydro
 
 This is build/package validation, not a claim of in-game testing. If a change requires laptop runtime tests, use `/Users/darren/Games/RimWorld-ModTesting/Game` and `python3 /Users/darren/codex_workspace/rimworld-standalone/launch.py` with a disposable absolute `-savedatafolder`. Keep Steam uninitialized and follow the workspace AGENTS.md. No game or Steam installation is needed for these Actions workflows.
 
-## Demigryphs end-to-end verification
+## Build metadata removal verification
 
-Final manual runs completed successfully on 2026-10-26 using shared tooling `b1568f2acc098c2c3b89cdacea96a2b18ebe929c`:
+On 2026-10-26, all seven default branches and all five existing dev branches were repinned to shared commit `25c60977b5dbd240e3624ea963e734699139cb43`. All 12 hosted builds passed. Every downloaded Actions artifact contained only the mod ZIP, `SHA256SUMS`, and release notes; neither the artifact nor its mod ZIP contained build-info JSON. Every checksum and ZIP CRC verified. The 14 shared regression tests and actionlint passed, including checks that old metadata inside an allowlisted folder is excluded and that `dist/` contains only the ZIP/checksum.
+
+| Repository | Branch | Verified build |
+| --- | --- | --- |
+| Demigryphs | main | [40401691229](https://github.com/ZadesSC/Demigryphs/actions/runs/40401691229) |
+| HighDensityBeds | main | [40401694741](https://github.com/ZadesSC/HighDensityBeds/actions/runs/40401694741) |
+| ZadesMaidnoidExtensions | main | [40401697216](https://github.com/ZadesSC/ZadesMaidnoidExtensions/actions/runs/40401697216) |
+| HighDensityHydroponics | master | [40401700321](https://github.com/ZadesSC/HighDensityHydroponics/actions/runs/40401700321) |
+| ayameduki_races_ce_patch | master | [40401704475](https://github.com/ZadesSC/ayameduki_races_ce_patch/actions/runs/40401704475) |
+| HighDensityAnimals | main | [40401708915](https://github.com/ZadesSC/HighDensityAnimals/actions/runs/40401708915) |
+| Zades-Maidnoid-Combat-Extended-Patch | main | [40401711953](https://github.com/ZadesSC/Zades-Maidnoid-Combat-Extended-Patch/actions/runs/40401711953) |
+| Demigryphs | dev | [40401717086](https://github.com/ZadesSC/Demigryphs/actions/runs/40401717086) |
+| HighDensityBeds | dev | [40401718455](https://github.com/ZadesSC/HighDensityBeds/actions/runs/40401718455) |
+| ayameduki_races_ce_patch | dev | [40401722914](https://github.com/ZadesSC/ayameduki_races_ce_patch/actions/runs/40401722914) |
+| HighDensityAnimals | dev | [40401725280](https://github.com/ZadesSC/HighDensityAnimals/actions/runs/40401725280) |
+| Zades-Maidnoid-Combat-Extended-Patch | dev | [40401730170](https://github.com/ZadesSC/Zades-Maidnoid-Combat-Extended-Patch/actions/runs/40401730170) |
+
+[Demigryphs v2026.10.26.3](https://github.com/ZadesSC/Demigryphs/releases/tag/v2026.10.26.3) was published by [release run 40401798480](https://github.com/ZadesSC/Demigryphs/actions/runs/40401798480) from merged main commit `34e8442f1726e822c65bf6a276781869cb3430be`, supporting RimWorld 1.6 and 1.7. Its only assets are `Demigryphs-v2026.10.26.3.zip` and `SHA256SUMS`. The ZIP contains 837 files and no build-info JSON. Its SHA256 is `4aaacc99259a9c98bed53495b2430e2f83f4c86fe6bcda57dfcfa3dd7b943783`; the published ZIP exactly matches the validated release artifact. Demigryphs' standalone packager was also checked to keep its metadata internal.
+
+The original rollout evidence below predates this policy change and describes historical releases; those archives were not rewritten.
+
+## Original Demigryphs end-to-end verification (historical)
+
+The original manual runs completed successfully on 2026-10-26 using shared tooling `b1568f2acc098c2c3b89cdacea96a2b18ebe929c`:
 
 - [Dev workflow, run 40399414457](https://github.com/ZadesSC/Demigryphs/actions/runs/40399414457), commit `b2b8b86b817b463a97779189f44eedd5d6f83cb6`, supports RimWorld 1.6 and 1.7.
 - Dev ZIP: `Demigryphs-dev.2026.10.26.10.1.gb2b8b86b817b.zip`.
@@ -184,7 +207,7 @@ Downloaded the dev artifact, release artifact, and published release assets. Ver
 
 ### Rollout checks
 
-All 12 default/dev branch configurations passed local build/package validation, and all final hosted branch builds passed. The 13 shared contract/regression tests pass, including calendar/channel validation, existing-tag collisions, branch restrictions, fingerprint drift, unexpected DLLs, load-folder mismatches, symlinks, stale compile output, MSBuild environment isolation, reproducibility, and metadata/checksums. All workflow files pass actionlint 1.7.12.
+At the original rollout, all 12 default/dev branch configurations passed local build/package validation, and all final hosted branch builds passed. The original 13 shared contract/regression tests passed, including calendar/channel validation, existing-tag collisions, branch restrictions, fingerprint drift, unexpected DLLs, load-folder mismatches, symlinks, stale compile output, MSBuild environment isolation, reproducibility, and metadata/checksums. All workflow files passed actionlint 1.7.12.
 
 | Repository | Branch | Successful final rollout run |
 | --- | --- | --- |
