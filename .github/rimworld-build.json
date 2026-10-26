@@ -1,0 +1,78 @@
+{
+  "assemblies": [
+    "1.6/Assemblies/HighDensityHydro.dll",
+    "1.7/Assemblies/HighDensityHydro.dll"
+  ],
+  "assemblyMode": "compile",
+  "commands": [
+    [
+      "dotnet",
+      "build",
+      "Source/HighDensityHydro/HighDensityHydro.SDK.csproj",
+      "-c",
+      "Release",
+      "-p:RimWorldDir={references}/game16",
+      "-p:HarmonyDllPath={references}/harmony16/0Harmony.dll"
+    ],
+    [
+      "dotnet",
+      "build",
+      "Source/HighDensityHydro/HighDensityHydro.1.7.csproj",
+      "-c",
+      "Release",
+      "-p:RimWorldAssemblyDir={references}/game17",
+      "-p:HarmonyDllPath={references}/harmony17/0Harmony.dll"
+    ]
+  ],
+  "defaultBranch": "master",
+  "dependencyNotes": [],
+  "include": [
+    "About",
+    "1.6",
+    "1.7",
+    "Defs",
+    "Languages",
+    "Patches",
+    "Textures",
+    "LoadFolders.xml",
+    "LICENSE",
+    "README.md"
+  ],
+  "needsDotnet": true,
+  "references": [
+    {
+      "destination": "game16/RimWorldWin64_Data/Managed",
+      "package": "krafs.rimworld.ref",
+      "prefix": "ref/net472/",
+      "version": "1.6.4871"
+    },
+    {
+      "destination": "harmony16",
+      "package": "lib.harmony",
+      "prefix": "lib/net472/",
+      "version": "2.4.2"
+    },
+    {
+      "destination": "game17",
+      "package": "krafs.rimworld.ref",
+      "prefix": "ref/net10.0/",
+      "version": "1.7.4982-unstable"
+    },
+    {
+      "destination": "harmony17",
+      "package": "lib.harmony",
+      "prefix": "lib/net10.0/",
+      "version": "2.4.2"
+    }
+  ],
+  "schemaVersion": 1,
+  "slug": "HighDensityHydroponics",
+  "sourceGlobs": [
+    "Source/**/*.cs",
+    "Source/**/*.csproj"
+  ],
+  "supportedVersions": [
+    "1.6",
+    "1.7"
+  ]
+}

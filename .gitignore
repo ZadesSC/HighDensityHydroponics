@@ -54,3 +54,8 @@ Tests/*/Assemblies/
 Assemblies/*.pdb
 1.6/Assemblies/*.pdb
 1.7/Assemblies/*.pdb
+
+/dist/
+/.rimworld-ci/
+/release-notes.txt
+__pycache__/
