@@ -65,9 +65,9 @@ jobs:
       - name: Validate, build, and package
         env:
           CHANNEL: ${{ inputs.channel }}
-          VERSION: ${{ steps.identity.outputs.version }}
+          RIMWORLD_BUILD_VERSION: ${{ steps.identity.outputs.version }}
           RIMWORLD_TOOLING_REF: ${{ inputs.tooling-ref }}
-        run: python3 .rimworld-ci/tools/ci/rimworld_build.py build --channel "$CHANNEL" --version "$VERSION"
+        run: python3 .rimworld-ci/tools/ci/rimworld_build.py build --channel "$CHANNEL" --version "$RIMWORLD_BUILD_VERSION"
       - name: Preserve package and identity
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

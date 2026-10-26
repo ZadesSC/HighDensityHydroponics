@@ -1,10 +1,12 @@
 """Contract tests for release safety and the installable package."""
 import datetime as dt
 import json
+import os
 from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 import rimworld_build as build
@@ -70,6 +72,24 @@ class BuildContract(unittest.TestCase):
         (self.root / 'Source/Example.cs').write_text('// changed')
         with self.assertRaisesRegex(ValueError, 'Source or committed DLL changed'):
             build.check_fingerprint(self.root, self.cfg)
+
+    def test_dll_change_invalidates_fingerprint(self):
+        (self.root / '.github/assembly-fingerprints.json').write_text(build.dump(build.fingerprint(self.root, self.cfg)))
+        (self.root / '1.7/Assemblies/Example.dll').write_text('changed DLL')
+        with self.assertRaisesRegex(ValueError, 'Source or committed DLL changed'):
+            build.check_fingerprint(self.root, self.cfg)
+
+    def test_compile_cannot_silently_use_an_old_dll(self):
+        self.cfg.update(assemblyMode='compile', commands=[['git', 'status', '--porcelain']])
+        build.prepare(self.root, self.cfg)
+        with self.assertRaisesRegex(ValueError, 'Missing or empty runtime'):
+            build.collect_files(self.root, self.cfg)
+
+    def test_download_version_does_not_leak_into_msbuild(self):
+        self.cfg.update(assemblyMode='compile', commands=[['python3', '-c',
+                        'import os; assert not any(k.lower() == "version" for k in os.environ)']])
+        with patch.dict(os.environ, {'VERSION': 'dev.2026.10.26.1.1.gabcdef123456'}):
+            build.prepare(self.root, self.cfg)
 
     def test_dependency_dll_cannot_be_redistributed(self):
         (self.root / '1.7/Assemblies/0Harmony.dll').write_text('dependency')

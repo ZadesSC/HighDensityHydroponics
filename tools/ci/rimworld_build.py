@@ -165,10 +165,13 @@ def prepare(root, cfg):
     with tempfile.TemporaryDirectory(prefix='rimworld-ci-') as directory:
         temp = Path(directory)
         fetch_references(root, cfg, temp)
+        # MSBuild imports environment variables as properties, case-insensitively.
+        # A download label such as dev.YYYY.MM.DD is not a NuGet/assembly Version.
+        command_env = {key: value for key, value in os.environ.items() if key.lower() != 'version'}
         for command in cfg.get('commands', []):
             command = [part.replace('{references}', str(temp)) for part in command]
             print('+', ' '.join(command), flush=True)
-            subprocess.run(command, cwd=root, check=True)
+            subprocess.run(command, cwd=root, check=True, env=command_env)
 
 
 def collect_files(root, cfg):
