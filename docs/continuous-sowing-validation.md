@@ -61,7 +61,7 @@ It found no blocking defects; both runs have 59 passing checks and no failures.
 The GitHub package check also passed for that commit. This is an agent review,
 not a formal GitHub approval.
 
-[Continuous sowing GIF](media/continuous-sowing.gif) now shows one autonomous
+[Continuous sowing GIF](https://github.com/user-attachments/assets/2d501603-b464-46e6-a6ad-75b38d8c0116) now shows one autonomous
 pawn filling all 16 internal slots through the same surface tile. A normal allowed
 area exposes only basin cell `(50, 0, 50)` and the adjacent standing cell
 `(49, 0, 50)`. The pawn stays on that standing cell throughout sowing and chooses
@@ -79,3 +79,5 @@ code changed for this recording. The session had no runtime error callbacks, Ste
 remained uninitialized, and its owned-process/input/Mods cleanup audit passed.
 Original PNGs, transfer observations, journal, recording adapter and prior clips
 remain in the external evidence directory.
+
+The GIF is hosted as an attachment on [PR #16](https://github.com/ZadesSC/HighDensityHydroponics/pull/16); recording media is kept outside the repository tree.
