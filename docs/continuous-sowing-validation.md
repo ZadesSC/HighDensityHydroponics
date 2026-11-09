@@ -51,3 +51,24 @@ framework, build logs, candidate inventories and `runtime/runs/sow16-i` and
 pre-fix active-job reload run are retained separately. Both accepted runs show
 positive Steam initialization failure evidence, unchanged inputs/Mods, stopped
 owned game/supervisor processes and successful cleanup.
+
+## Independent review and recording
+
+A separate read-only agent reviewed gameplay code at
+`d76f835b95a9fbf07af79ce7c85431c8e6907570`, checked the relevant vanilla code,
+and independently reran public framework validation for both retained runs.
+It found no blocking defects; both runs have 59 passing checks and no failures.
+The GitHub package check also passed for that commit. This is an agent review,
+not a formal GitHub approval.
+
+[Continuous sowing GIF](media/continuous-sowing.gif) contains 32 actual game-rendered
+frames captured every five simulation ticks in a separate standalone 1.6 live
+diagnostic session (`sow-demo16-e`). A grower with Growing enabled found its own
+vanilla jobs and filled the bay from 0 to 16 stored plants before leaving when
+full. The first and final captured simulation ticks were 2 and 157. Plant work
+was accelerated and power forced on; the GIF playback is slowed for readability.
+It is a visual demonstration, not a scored or batch-certified live run. The two
+clean batch cases above supply the regression verdict. The recording session
+had no runtime error callbacks and passed its owned-process/input/Mods cleanup
+audit. Its original PNGs, command journal, observer results and recording adapter
+remain in the external evidence directory.
