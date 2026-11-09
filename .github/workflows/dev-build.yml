@@ -2,9 +2,9 @@ name: Build dev package
 
 on:
   push:
-    branches: [master, dev]
+    branches: [master, dev, development]
   pull_request:
-    branches: [master, dev]
+    branches: [master, dev, development]
   workflow_dispatch:
 
 permissions:
