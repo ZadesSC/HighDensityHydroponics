@@ -209,19 +209,13 @@ namespace HighDensityHydro
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override string GetInspectString()
 		{
+			// Let vanilla report the up-to-date configured demand as "Power needed".
+			SyncPowerOutputIfNeeded();
 			string text = base.GetInspectString();
 			if (!_requiresTemperatureCheck)
 			{
 				text = RemoveInspectLine(text, "CannotGrowBadSeasonTemperature".Translate().ToString());
 				text = RemoveInspectLine(text, "GrowSeasonHereNow".Translate().ToString());
-			}
-
-			SyncPowerOutputIfNeeded();
-			if (_powerScalesCapacity)
-			{
-				text = RemoveInspectLineStartingWith(text, "PowerNeeded".Translate().ToString());
-				text = RemoveInspectLineStartingWith(text, "PowerConsumptionMode".Translate().ToString());
-				text += "\n" + "PowerConsumptionMode".Translate() + ": " + CalculateCurrentPowerCost().ToString("F0") + " W";
 			}
 
 			text += "\n" + "HDH_NumStoredPlants".Translate(_numStoredPlants + _numStoredPlantsBuffer);
@@ -269,20 +263,6 @@ namespace HighDensityHydro
 			return string.Join("\n", lines);
 		}
 
-		private static string RemoveInspectLineStartingWith(string text, string linePrefix)
-		{
-			if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(linePrefix))
-			{
-				return text;
-			}
-
-			var lines = text
-				.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
-				.Where(line => !line.StartsWith(linePrefix, StringComparison.Ordinal));
-
-			return string.Join("\n", lines);
-		}
-		
 		// Add dev gizmos
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override IEnumerable<Gizmo> GetGizmos()

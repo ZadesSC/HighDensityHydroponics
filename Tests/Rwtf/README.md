@@ -45,3 +45,19 @@ The fixture explicitly forces bay power and temporarily accelerates human
 PlantWorkSpeed, restoring the original stat definition in `finally`. Human needs
 remain enabled. These are focused assigned-job checks, not power-network tests,
 a compatibility matrix, normal-duration labor measurements or a performance benchmark.
+
+## Power readout regression
+
+`PowerReadout.cs` provides case `hdh.power-readout` with
+`PowerReadoutFixture.Contract` (`hdh-power-readout`). Use the same standalone
+configuration procedure above, replacing the fixture contract and adapter path.
+It uses a charged native battery, conduits, a Quantum bay, a disconnected Quantum
+bay and a vanilla standing-lamp control. PowerOn is never forced.
+
+The case checks that the inspector retains exactly one vanilla `PowerNeeded`
+line, including while off, without substituting `PowerConsumptionMode`. It also
+checks the translated active-power requirement label, pending/completed flicks,
+measured battery drain, density and built-in sunlamp changes, disconnection and
+checkpoint reload. The native completed flick action is invoked directly in a
+zero-pawn fixture; this does not test a colonist walking to the switch. Repeat on
+1.6 and 1.7 with their matching assembly references.
