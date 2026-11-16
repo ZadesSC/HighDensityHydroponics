@@ -11,6 +11,7 @@
 	<description>High Density Hydroponics</description>
 	<loadAfter>
 		<li>brrainz.harmony</li>
+		<li>OskarPotocki.VanillaFactionsExpanded.Core</li>
 		<li>dubwise.dubsbadhygiene</li>
 		<li>ilyvion.farminghysteresis</li>
 	</loadAfter>

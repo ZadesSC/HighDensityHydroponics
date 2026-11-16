@@ -809,6 +809,25 @@ namespace HighDensityHydro
 			}
 
 			_bayStage = BayStage.Growing;
+			// A density reduction can leave more sowing jobs than available slots.
+			// Stop jobs that still own a surface plant before clearing the footprint;
+			// the completing job's plant has already been despawned and stored.
+			var remainingPlants = PlantsOnMe.ToList();
+			foreach (Pawn pawn in Map.mapPawns.AllPawnsSpawned.ToList())
+			{
+				Job job = pawn.CurJob;
+				if (job?.def == JobDefOf.Sow && job.targetA.Thing is Plant plant && remainingPlants.Contains(plant))
+				{
+					pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
+				}
+			}
+			foreach (Plant plant in remainingPlants)
+			{
+				if (plant.Spawned)
+				{
+					plant.DeSpawn(DestroyMode.Vanish);
+				}
+			}
 			MarkPlantsMeshDirty();
 			SoundDefOf.CryptosleepCasket_Accept.PlayOneShot(new TargetInfo(Position, Map, false));
 		}
