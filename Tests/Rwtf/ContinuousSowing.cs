@@ -235,7 +235,8 @@ public sealed class ContinuousSowing : Rwtf.Scenario
 
             Reset(bay);
             Assign(c, first, cell);
-            c.Wait(() => cell.GetPlant(c.Map) != null, 100, 10, "crop-change plant did not spawn");
+            // The worker must walk back from the Quantum density-reduction fixture.
+            c.Wait(() => cell.GetPlant(c.Map) != null, 500, 15, "crop-change plant did not spawn");
             Plant oldCrop = cell.GetPlant(c.Map);
             ((IPlantToGrowSettable)bay).SetPlantDefToGrow(c.Def<ThingDef>("Plant_Potato"));
             c.Check("crop change discards old incomplete crop safely", oldCrop.Destroyed && bay.StoredPlantCount == 0);
@@ -269,7 +270,8 @@ public sealed class ContinuousSowing : Rwtf.Scenario
         Reset(bay);
         reloadRecords = Records(pawn);
         Assign(c, pawn, bay.OccupiedRect().Cells.First());
-        c.Wait(() => bay.PlantsOnMe.Any(p => p.LifeStage == PlantLifeStage.Sowing), 100, 10, "active reload sow did not start");
+        // The prior phase ends at the separate vanilla hydroponics control.
+        c.Wait(() => bay.PlantsOnMe.Any(p => p.LifeStage == PlantLifeStage.Sowing), 500, 15, "active reload sow did not start");
         c.Check("checkpoint contains unfinished vanilla sow job", pawn.CurJobDef == JobDefOf.Sow && bay.StoredPlantCount == 0);
     }
 
