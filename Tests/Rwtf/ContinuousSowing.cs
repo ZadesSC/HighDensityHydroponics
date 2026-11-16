@@ -182,6 +182,7 @@ public sealed class ContinuousSowing : Rwtf.Scenario
                 c.Map.Center + new IntVec3(-8, 0, 0), faction: Faction.OfPlayer);
             Power(quantum);
             ((IPlantToGrowSettable)quantum).SetPlantDefToGrow(c.Def<ThingDef>("Plant_Rice"));
+            Reset(quantum);
             quantum.AdjustCapacity(20 - quantum.CurrentPowerScalingLevel);
             Set(quantum, "_numStoredPlants", 75);
             var workSpeed = first.def.statBases.Single(s => s.stat == StatDefOf.PlantWorkSpeed);
