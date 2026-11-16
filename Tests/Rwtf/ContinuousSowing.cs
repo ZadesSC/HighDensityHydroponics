@@ -73,10 +73,10 @@ public sealed class ContinuousSowing : Rwtf.Scenario
     const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
     int reloadRecords;
     public override string Id => "hdh.sowing";
-    public override string Intent => "same-cell reuse, vanilla rewards, interruption, final-slot competition and active-job reload";
+    public override string Intent => "same-cell reuse, density reduction, crop eligibility, interruption, final-slot competition and active-job reload";
     public override string EvidenceLevel => "assigned-job";
     public override string[] RequiredPackages => new[] { Environment.GetEnvironmentVariable("RWTF_PARAMETER_package") ?? "mapleapple.highdensityhydroponics.fixed.zouhb.zades" };
-    public override string[] RequiredDefs => new[] { "HDH_Hydroponics_mini", "Plant_Rice", "HydroponicsBasin" };
+    public override string[] RequiredDefs => new[] { "HDH_Hydroponics_mini", "HDH_Hydroponics_Quantum", "Plant_Rice", "HydroponicsBasin" };
     public override FixtureProvider Fixture => new HdhSowingFixture();
 
     static void Set(Building_HighDensityHydro bay, string name, object value) =>
@@ -177,6 +177,54 @@ public sealed class ContinuousSowing : Rwtf.Scenario
             first.jobs.StopAll();
             second.jobs.StopAll();
 
+            // Issue #20: two spawned sowing plants outlive a density reduction.
+            var quantum = (Building_HighDensityHydro)c.Spawn("quantum", "HDH_Hydroponics_Quantum",
+                c.Map.Center + new IntVec3(-8, 0, 0), faction: Faction.OfPlayer);
+            Power(quantum);
+            ((IPlantToGrowSettable)quantum).SetPlantDefToGrow(c.Def<ThingDef>("Plant_Rice"));
+            Reset(quantum);
+            quantum.AdjustCapacity(20 - quantum.CurrentPowerScalingLevel);
+            Set(quantum, "_numStoredPlants", 75);
+            var workSpeed = first.def.statBases.Single(s => s.stat == StatDefOf.PlantWorkSpeed);
+            workSpeed.value = 1f;
+            Assign(c, first, quantum.OccupiedRect().Cells.First());
+            Assign(c, second, quantum.OccupiedRect().Cells.Last());
+            c.Wait(() => quantum.PlantsOnMe.Count() == 2, 250, 1, "two Quantum sowing plants did not spawn");
+            quantum.AdjustCapacity(-1);
+            c.Check("density reduction leaves one storage slot", quantum.MaxPlantCapacity == 76 && quantum.StoredPlantCount == 75);
+            int quantumRecords = Records(first) + Records(second);
+            c.Wait(() => quantum.StoredPlantCount == 76, 500, 1, "reduced Quantum capacity never filled");
+            c.Check("reduced-capacity transition enters Growing", typeof(Building_HighDensityHydro).GetField("_bayStage", Private).GetValue(quantum).ToString() == "Growing");
+            c.Check("reduced-capacity transition clears surface plants", !quantum.PlantsOnMe.Any());
+            c.Wait(() => first.CurJobDef != JobDefOf.Sow && second.CurJobDef != JobDefOf.Sow,
+                30, 1, "excess Quantum sowing job was not stopped");
+            c.Check("only the stored Quantum sow completed", Records(first) + Records(second) == quantumRecords + 1);
+            c.Check("Quantum storage stays within reduced capacity", quantum.StoredPlantCount == 76 && !quantum.PlantsOnMe.Any());
+            workSpeed.value = 100f;
+
+            if (ModsConfig.IsActive("OskarPotocki.VanillaFactionsExpanded.Core"))
+            {
+                var extraTags = new[] { "Hydroponic", "Decorative", "VCE_Aquatic", "VCE_Sandy", "VCE_FlowerGarden" };
+                foreach (string tag in extraTags)
+                {
+                    // Synthetic defs exercise each accepted category even if its content mod is absent.
+                    var crop = new ThingDef { category = ThingCategory.Plant, plant = new PlantProperties() };
+                    crop.plant.sowTags.Add(tag);
+                    c.Check("Quantum accepts VEF sow tag " + tag, PlantUtility.CanSowOnGrower(crop, quantum));
+                    if (tag != "Hydroponic")
+                        c.Check("basic bay does not gain VEF sow tag " + tag, !PlantUtility.CanSowOnGrower(crop, bay));
+                }
+                var unsupported = new ThingDef { category = ThingCategory.Plant, plant = new PlantProperties() };
+                unsupported.plant.sowTags.Add("HDH_TestUnsupported");
+                c.Check("Quantum does not accept arbitrary sow tags", !PlantUtility.CanSowOnGrower(unsupported, quantum));
+                foreach (string defName in new[] { "VGE_OxyalgaePlant", "VCE_Taro", "VCE_Watercress", "VCE_Lotus", "VCE_WaterChestnut" })
+                {
+                    ThingDef crop = DefDatabase<ThingDef>.GetNamedSilentFail(defName);
+                    if (crop != null)
+                        c.Check("Quantum accepts installed crop " + defName, PlantUtility.CanSowOnGrower(crop, quantum));
+                }
+            }
+
             Reset(bay);
             Plant recovered = (Plant)GenSpawn.Spawn(c.Def<ThingDef>("Plant_Rice"), cell, c.Map);
             recovered.Growth = .0001f;
@@ -187,7 +235,8 @@ public sealed class ContinuousSowing : Rwtf.Scenario
 
             Reset(bay);
             Assign(c, first, cell);
-            c.Wait(() => cell.GetPlant(c.Map) != null, 100, 10, "crop-change plant did not spawn");
+            // The worker must walk back from the Quantum density-reduction fixture.
+            c.Wait(() => cell.GetPlant(c.Map) != null, 500, 15, "crop-change plant did not spawn");
             Plant oldCrop = cell.GetPlant(c.Map);
             ((IPlantToGrowSettable)bay).SetPlantDefToGrow(c.Def<ThingDef>("Plant_Potato"));
             c.Check("crop change discards old incomplete crop safely", oldCrop.Destroyed && bay.StoredPlantCount == 0);
@@ -221,7 +270,8 @@ public sealed class ContinuousSowing : Rwtf.Scenario
         Reset(bay);
         reloadRecords = Records(pawn);
         Assign(c, pawn, bay.OccupiedRect().Cells.First());
-        c.Wait(() => bay.PlantsOnMe.Any(p => p.LifeStage == PlantLifeStage.Sowing), 100, 10, "active reload sow did not start");
+        // The prior phase ends at the separate vanilla hydroponics control.
+        c.Wait(() => bay.PlantsOnMe.Any(p => p.LifeStage == PlantLifeStage.Sowing), 500, 15, "active reload sow did not start");
         c.Check("checkpoint contains unfinished vanilla sow job", pawn.CurJobDef == JobDefOf.Sow && bay.StoredPlantCount == 0);
     }
 

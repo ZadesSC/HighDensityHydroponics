@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Patch>
+    <Operation Class="PatchOperationFindMod">
+        <mods>
+            <li>Vanilla Expanded Framework</li>
+        </mods>
+        <match Class="PatchOperationAddModExtension">
+            <xpath>Defs/ThingDef[defName="HDH_Hydroponics_Quantum"]</xpath>
+            <value>
+                <li Class="VEF.Plants.SowerExtension">
+                    <extraSowTags>
+                        <li>Hydroponic</li>
+                        <li>Decorative</li>
+                        <li>VCE_Aquatic</li>
+                        <li>VCE_Sandy</li>
+                        <li>VCE_FlowerGarden</li>
+                    </extraSowTags>
+                </li>
+            </value>
+        </match>
+    </Operation>
+</Patch>

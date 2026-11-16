@@ -21,7 +21,7 @@ HDH packages together.
 ```sh
 rwtf --config /absolute/local.json doctor --prepare-catalog-policy
 rwtf --config /absolute/local.json build --version 1.6 --adapter /absolute/ContinuousSowing.cs
-rwtf --config /absolute/local.json run --version 1.6 --case hdh.sowing --ticks 600 --timeout 300 --tag sow16
+rwtf --config /absolute/local.json run --version 1.6 --case hdh.sowing --ticks 1200 --timeout 300 --tag sow16
 rwtf --config /absolute/local.json validate /absolute/workspace/runs/sow16
 ```
 
@@ -40,6 +40,11 @@ Checks cover:
 - Crop changes while sowing.
 - Ordinary hydroponics receives no HDH completion toil and keeps its physical plant.
 - An unfinished saved job restores the extra toil and completes exactly once.
+- Reducing Quantum density with two active sowing plants clears excess surface
+  plants and stops their jobs when the remaining storage slot fills (issue #20).
+- With VEF enabled, Quantum accepts all five extra sow tags while the basic bay
+  retains its original categories. Installed oxyalgae and aquatic crops are also
+  checked for selection eligibility; these checks do not assert special growth effects.
 
 The fixture explicitly forces bay power and temporarily accelerates human
 PlantWorkSpeed, restoring the original stat definition in `finally`. Human needs
