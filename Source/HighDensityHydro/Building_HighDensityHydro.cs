@@ -209,19 +209,13 @@ namespace HighDensityHydro
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override string GetInspectString()
 		{
+			// Let vanilla report the up-to-date configured demand as "Power needed".
+			SyncPowerOutputIfNeeded();
 			string text = base.GetInspectString();
 			if (!_requiresTemperatureCheck)
 			{
 				text = RemoveInspectLine(text, "CannotGrowBadSeasonTemperature".Translate().ToString());
 				text = RemoveInspectLine(text, "GrowSeasonHereNow".Translate().ToString());
-			}
-
-			SyncPowerOutputIfNeeded();
-			if (_powerScalesCapacity)
-			{
-				text = RemoveInspectLineStartingWith(text, "PowerNeeded".Translate().ToString());
-				text = RemoveInspectLineStartingWith(text, "PowerConsumptionMode".Translate().ToString());
-				text += "\n" + "PowerConsumptionMode".Translate() + ": " + CalculateCurrentPowerCost().ToString("F0") + " W";
 			}
 
 			text += "\n" + "HDH_NumStoredPlants".Translate(_numStoredPlants + _numStoredPlantsBuffer);
@@ -269,20 +263,6 @@ namespace HighDensityHydro
 			return string.Join("\n", lines);
 		}
 
-		private static string RemoveInspectLineStartingWith(string text, string linePrefix)
-		{
-			if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(linePrefix))
-			{
-				return text;
-			}
-
-			var lines = text
-				.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries)
-				.Where(line => !line.StartsWith(linePrefix, StringComparison.Ordinal));
-
-			return string.Join("\n", lines);
-		}
-		
 		// Add dev gizmos
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		public override IEnumerable<Gizmo> GetGizmos()
@@ -492,7 +472,7 @@ namespace HighDensityHydro
 
 		private bool CanAcceptSowNowInternal()
 		{
-			if (_bayStage != BayStage.Sowing || _numStoredPlants >= _plantCapacity)
+			if (!HasUnclaimedSowingCapacity())
 			{
 				return false;
 			}
@@ -751,50 +731,105 @@ namespace HighDensityHydro
 				ResetPlantStateForSowing(clearSpawnedPlants: true);
 			}
 			
-			// if max, clean up current stage and move on to grow stage
-			if (_numStoredPlants >= _plantCapacity)
+			foreach (Plant plant in PlantsOnMe.ToList<Plant>())
 			{
-				_numStoredPlants = _plantCapacity;
-				
-				// Cancel sowing jobs targeting this grower and then delete all current plants on the hydroponics
-				foreach (Pawn pawn in Map.mapPawns.AllPawnsSpawned)
+				// Recovery must not steal a plant from a still-running sowing job.
+				if (!Map.reservationManager.IsReserved(plant))
 				{
-					Job curJob = pawn.CurJob;
-					if (curJob == null || curJob.def != JobDefOf.Sow || !curJob.targetA.HasThing) continue;
-					if (curJob.targetA.Thing == this)
-					{
-						pawn.jobs.EndCurrentJob(JobCondition.InterruptForced, true);
-					}
+					TryStoreSownPlant(plant);
 				}
-				
-				foreach (Plant plant in PlantsOnMe.ToList<Plant>())
+			}
+
+			FinishSowingIfFull();
+		}
+
+		internal bool TryBeginSowing(ThingDef crop)
+		{
+			if (!Spawned || crop != GetPlantDefToGrow() || !((IPlantToGrowSettable)this).CanAcceptSowNow())
+			{
+				return false;
+			}
+
+			if (_currentPlantDefToGrow != crop)
+			{
+				ResetPlantStateForSowing(clearSpawnedPlants: true);
+			}
+
+			return HasUnclaimedSowingCapacity();
+		}
+
+		private bool HasUnclaimedSowingCapacity()
+		{
+			int remaining = _plantCapacity - _numStoredPlants;
+			if (_bayStage != BayStage.Sowing || remaining <= 0)
+			{
+				return false;
+			}
+
+			// Only inspect the footprint near capacity. Each physical plant, including
+			// one still being sown, claims a slot without a separate saved job ledger.
+			if (!Spawned || remaining > def.size.x * def.size.z)
+			{
+				return true;
+			}
+
+			foreach (Plant plant in PlantsOnMe)
+			{
+				if (--remaining <= 0)
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		internal bool TryStoreSownPlant(Plant plant)
+		{
+			if (!Spawned || _bayStage != BayStage.Sowing || _numStoredPlants >= _plantCapacity ||
+				plant == null || !plant.Spawned || plant.Map != Map ||
+				!this.OccupiedRect().Contains(plant.Position) || plant.LifeStage != PlantLifeStage.Growing ||
+				plant.def != GetPlantDefToGrow() || plant.def != _currentPlantDefToGrow)
+			{
+				return false;
+			}
+
+			plant.DeSpawn(DestroyMode.Vanish);
+			_numStoredPlants++;
+			MarkPlantsMeshDirty();
+			FinishSowingIfFull();
+			return true;
+		}
+
+		private void FinishSowingIfFull()
+		{
+			if (_bayStage != BayStage.Sowing || _numStoredPlants < _plantCapacity)
+			{
+				return;
+			}
+
+			_bayStage = BayStage.Growing;
+			// A density reduction can leave more sowing jobs than available slots.
+			// Stop jobs that still own a surface plant before clearing the footprint;
+			// the completing job's plant has already been despawned and stored.
+			var remainingPlants = PlantsOnMe.ToList();
+			foreach (Pawn pawn in Map.mapPawns.AllPawnsSpawned.ToList())
+			{
+				Job job = pawn.CurJob;
+				if (job?.def == JobDefOf.Sow && job.targetA.Thing is Plant plant && remainingPlants.Contains(plant))
+				{
+					pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
+				}
+			}
+			foreach (Plant plant in remainingPlants)
+			{
+				if (plant.Spawned)
 				{
 					plant.DeSpawn(DestroyMode.Vanish);
 				}
-				
-				_bayStage = BayStage.Growing;
-				MarkPlantsMeshDirty();
-				SoundDefOf.CryptosleepCasket_Accept.PlayOneShot(new TargetInfo(Position, Map, false));
-				return;
 			}
-			
-			// if not max, keep storing plants as normal
-			bool storedAnyPlants = false;
-			foreach (Plant plant in PlantsOnMe.ToList<Plant>())
-			{
-				// make sure the plant is actually growing (ie. pawns have finishing sowing the plant) before storing it
-				if (plant.LifeStage != PlantLifeStage.Growing)
-					continue;
-				
-				plant.DeSpawn(DestroyMode.Vanish);
-				_numStoredPlants++;
-				storedAnyPlants = true;
-			}
-
-			if (storedAnyPlants)
-			{
-				MarkPlantsMeshDirty();
-			}
+			MarkPlantsMeshDirty();
+			SoundDefOf.CryptosleepCasket_Accept.PlayOneShot(new TargetInfo(Position, Map, false));
 		}
 
 		// call this only in tick long, logic in here assume per 2000tick intervals

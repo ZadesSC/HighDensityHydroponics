@@ -39,7 +39,7 @@
     <HDH_ITabTemperatureNA>溫度：不可用</HDH_ITabTemperatureNA>
     <HDH_ITabVacuum>真空度：{0}</HDH_ITabVacuum>
     <HDH_ITabVacuumNA>真空度：不可用</HDH_ITabVacuumNA>
-    <HDH_ITabCurrentPowerUsage>當前耗電：{0}W</HDH_ITabCurrentPowerUsage>
+    <HDH_ITabRequiredPower>運作時所需功率：{0} W</HDH_ITabRequiredPower>
     <HDH_ITabPowerScalingDescription>提高或降低這台水培槽的密度。&#10;每提高一級會額外增加 {0} 株容量。</HDH_ITabPowerScalingDescription>
     <HDH_ITabNextPowerIncrease>下一次提高會額外增加 {0}W 耗電</HDH_ITabNextPowerIncrease>
     <HDH_ITabCurrentDensityLevel>當前密度等級：{0}</HDH_ITabCurrentDensityLevel>

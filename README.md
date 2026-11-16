@@ -2,6 +2,13 @@
 
 High Density Hydroponics mod for RimWorld.
 
+When Vanilla Expanded Framework is enabled, Quantum bays also accept
+hydroponics-only crops (including VGE oxyalgae), decorative crops, and Vanilla
+Plants Expanded - More Plants' aquatic, sandy, and flower-garden crops. Other
+bays retain their existing crop categories. VEF is optional. HDH's internal
+growth simulation does not automatically reproduce custom plant-class effects,
+such as water chestnut's heat bonus.
+
 ## Building for RimWorld 1.7
 
 Install the .NET 10 SDK, RimWorld 1.7, and the Harmony Workshop mod. On macOS with the default Steam library:

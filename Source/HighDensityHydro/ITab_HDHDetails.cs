@@ -54,7 +54,7 @@ namespace HighDensityHydro
                 vacuum = building.Position.GetVacuum(building.Map);
             }
 
-            float currentPower = -power.PowerOutput;
+            float requiredPower = building.CalculateCurrentPowerCost();
             float lineHeight = 24f;
 
             Rect plantLabelBox = new Rect(mainRect.x, mainRect.y, mainRect.width, lineHeight);
@@ -128,7 +128,7 @@ namespace HighDensityHydro
             Widgets.DrawLineHorizontal(mainRect.x, infoBox.y + lineHeight * infoLineCount, mainRect.width, Color.white);
 
             Rect powerBox = new Rect(mainRect.x, infoBox.y + lineHeight * infoLineCount + 5f, mainRect.width, lineHeight);
-            Widgets.Label(powerBox, "HDH_ITabCurrentPowerUsage".Translate(currentPower.ToString("F0")));
+            Widgets.Label(powerBox, "HDH_ITabRequiredPower".Translate(requiredPower.ToString("F0")));
 
             if (!building.PowerScalesCapacity)
             {

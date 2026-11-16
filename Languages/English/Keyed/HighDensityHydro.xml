@@ -39,7 +39,7 @@
     <HDH_ITabTemperatureNA>Temp: N/A</HDH_ITabTemperatureNA>
     <HDH_ITabVacuum>Vacuum: {0}</HDH_ITabVacuum>
     <HDH_ITabVacuumNA>Vacuum: N/A</HDH_ITabVacuumNA>
-    <HDH_ITabCurrentPowerUsage>Current power usage: {0}W</HDH_ITabCurrentPowerUsage>
+    <HDH_ITabRequiredPower>Power required when active: {0} W</HDH_ITabRequiredPower>
     <HDH_ITabPowerScalingDescription>Increase or decrease the density of this hydroponics bay.&#10;Each increase adds capacity for {0} plants.</HDH_ITabPowerScalingDescription>
     <HDH_ITabNextPowerIncrease>Next increase adds {0}W power consumption</HDH_ITabNextPowerIncrease>
     <HDH_ITabCurrentDensityLevel>Current density level: {0}</HDH_ITabCurrentDensityLevel>

@@ -166,20 +166,6 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
-        public void RemoveInspectLineStartingWith_RemovesMatchingPrefix()
-        {
-            var input = "Power needed: 2800 W\nStored plants: 4";
-
-            var result = (string)InvokeNonPublicStatic(
-                typeof(Building_HighDensityHydro),
-                "RemoveInspectLineStartingWith",
-                input,
-                "Power needed");
-
-            Assert.Equal("Stored plants: 4", result);
-        }
-
-        [Fact]
         public void CalculatePowerCost_UsesConfiguredSunlampProfileWhenScalingActive()
         {
             var building = new Building_HighDensityHydro();
@@ -494,11 +480,6 @@ namespace HighDensityHydro.UnitTests
         private static void InvokeNonPublic(object instance, string methodName, params object[] parameters)
         {
             instance.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(instance, parameters);
-        }
-
-        private static object InvokeNonPublicStatic(Type type, string methodName, params object[] parameters)
-        {
-            return type.GetMethod(methodName, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, parameters);
         }
 
         private static T GetField<T>(object instance, string fieldName)
