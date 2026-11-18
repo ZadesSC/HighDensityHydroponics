@@ -73,6 +73,7 @@
         <Compile Include="HDH_Mod.cs" />
         <Compile Include="GrowerSowPatch.cs" />
         <Compile Include="SowCompletionPatch.cs" />
+        <Compile Include="HarvestContinuationPatch.cs" />
         <Compile Include="HydroStatsExtension.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
     </ItemGroup>
