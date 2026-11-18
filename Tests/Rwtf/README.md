@@ -66,3 +66,29 @@ measured battery drain, density and built-in sunlamp changes, disconnection and
 checkpoint reload. The native completed flick action is invoked directly in a
 zero-pawn fixture; this does not test a colonist walking to the switch. Repeat on
 1.6 and 1.7 with their matching assembly references.
+
+# Continuous harvest runtime regression
+
+`ContinuousHarvest.cs` is the matching adapter for HDH harvesting. Configure it
+exactly as above, using `HdhHarvestFixture.Contract` for `fixtureContract`, and run
+case `hdh.harvest`:
+
+```sh
+rwtf --config /absolute/local.json build --version 1.6 --adapter /absolute/ContinuousHarvest.cs
+rwtf --config /absolute/local.json run --version 1.6 --case hdh.harvest --ticks 600 --timeout 500 --tag harv16
+rwtf --config /absolute/local.json validate /absolute/workspace/runs/harv16
+```
+
+Checks cover:
+
+- Each collected surface tile is refilled from storage in the same tick.
+- One vanilla harvest job keeps collecting refilled plants up to vanilla's 2400-work
+  batch (twelve rice), and a later job gets its own batch even though vanilla pools jobs.
+- Every stored rice plant is collected once; the bay returns to Sowing immediately.
+- A regrowing crop (`Plant_Berry`) is buffered on collection and returns to Growing
+  with all sixteen plants at its cut-back growth.
+- A rare-tick final wave stays in Harvest until those plants are collected.
+- Ordinary hydroponics harvesting is unaffected.
+- An unfinished harvest job with an HDH-queued replacement survives checkpoint reload.
+
+The same interventions as the sowing fixture apply, plus a forced Harvest stage.

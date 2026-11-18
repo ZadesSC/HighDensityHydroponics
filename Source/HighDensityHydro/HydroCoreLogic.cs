@@ -192,6 +192,15 @@ namespace HighDensityHydro
                 0f);
         }
 
+        // Vanilla WorkGiver_GrowerHarvest batches roughly this much harvest work into one job.
+        public const float HarvestJobWorkBudget = 2400f;
+
+        public static bool ShouldContinueHarvestJob(float collectedWork, float queuedWork, float nextPlantWork,
+            float budget = HarvestJobWorkBudget)
+        {
+            return collectedWork + queuedWork + nextPlantWork <= budget;
+        }
+
         public static bool ShouldConsumeDbhFuel(bool hasPipeNet, bool anyRecyclers)
         {
             return !hasPipeNet || !anyRecyclers;

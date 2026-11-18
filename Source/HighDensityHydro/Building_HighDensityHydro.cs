@@ -906,10 +906,6 @@ namespace HighDensityHydro
 		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
 		private void HandleHarvest()
 		{
-			// this keeps track of unharvested plants
-			// all plants need to be harvested/stored before proceeding to next stage
-			bool allHarvested = true;
-			
 			ThingDef plantDef = _currentPlantDefToGrow;
 			if (plantDef?.plant == null)
 			{
@@ -919,41 +915,79 @@ namespace HighDensityHydro
 			
 			foreach (IntVec3 cell in this.OccupiedRect().Cells)
 			{
-				List<Thing> things = Map.thingGrid.ThingsListAt(cell);
-				Plant existingPlant = things.OfType<Plant>().FirstOrDefault();
-				
-				if (existingPlant != null)
-				{
-					allHarvested = false;
-				}
-
-				if (ShouldClearHarvestPhasePlant(existingPlant, plantDef))
-				{
-					existingPlant.DeSpawn(DestroyMode.Vanish);
-					continue;
-				}
-				
-				if (existingPlant == null && _numStoredPlants > 0)
-				{
-					Plant spawnedPlant = ((Plant)GenSpawn.Spawn(ThingMaker.MakeThing(plantDef, null), cell, Map, WipeMode.Vanish));
-					spawnedPlant.Growth = _curGrowth;
-					spawnedPlant.Age = _plantAge;
-					_numStoredPlants--;
-				}
-				else
-				{
-					if (plantDef.plant.harvestAfterGrowth > 0 && existingPlant?.def != null && 
-					    existingPlant.def == plantDef && existingPlant.Growth < 0.999f)
-					{
-						_averageHarvestGrowth += existingPlant.Growth;
-						existingPlant.DeSpawn(DestroyMode.Vanish);
-						_numStoredPlantsBuffer++;
-					}
-				}
+				ProcessHarvestCell(cell, plantDef, out _);
 			}
 
-			if (_numStoredPlants != 0) return;
-			if (!allHarvested) return;
+			// All surface plants, including ones spawned this pass, must be collected before
+			// the next stage; otherwise the final wave would be left behind as loose plants.
+			TryFinishHarvest(plantDef, !PlantsOnMe.Any());
+		}
+
+		internal bool IsHarvesting => _bayStage == BayStage.Harvest;
+
+		// Called right after a pawn collects a surface plant. Refills that tile from storage so
+		// the harvester can continue without waiting for the next rare tick.
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		internal Plant TryRestockHarvestedCell(IntVec3 cell)
+		{
+			ThingDef plantDef = _currentPlantDefToGrow;
+			if (!Spawned || _bayStage != BayStage.Harvest || plantDef?.plant == null ||
+				!this.OccupiedRect().Contains(cell))
+			{
+				return null;
+			}
+
+			// A regrowing crop remains cut back; the first pass buffers it and the second refills the tile.
+			Plant spawned = ProcessHarvestCell(cell, plantDef, out bool hadPlant);
+			if (spawned == null && hadPlant && CellPlant(cell) == null)
+			{
+				spawned = ProcessHarvestCell(cell, plantDef, out _);
+			}
+
+			TryFinishHarvest(plantDef, !PlantsOnMe.Any());
+			return spawned;
+		}
+
+		private Plant CellPlant(IntVec3 cell) => Map.thingGrid.ThingsListAt(cell).OfType<Plant>().FirstOrDefault();
+
+		// One harvest-stage step for a footprint cell: clear stray plants, buffer cut-back regrowing
+		// crops, or spawn the next stored mature plant on an empty tile. Returns the spawned plant.
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		private Plant ProcessHarvestCell(IntVec3 cell, ThingDef plantDef, out bool hadPlant)
+		{
+			Plant existingPlant = CellPlant(cell);
+			hadPlant = existingPlant != null;
+
+			if (ShouldClearHarvestPhasePlant(existingPlant, plantDef))
+			{
+				existingPlant.DeSpawn(DestroyMode.Vanish);
+				return null;
+			}
+			
+			if (existingPlant == null && _numStoredPlants > 0)
+			{
+				Plant spawnedPlant = ((Plant)GenSpawn.Spawn(ThingMaker.MakeThing(plantDef, null), cell, Map, WipeMode.Vanish));
+				spawnedPlant.Growth = _curGrowth;
+				spawnedPlant.Age = _plantAge;
+				_numStoredPlants--;
+				return spawnedPlant;
+			}
+
+			if (plantDef.plant.harvestAfterGrowth > 0 && existingPlant?.def != null && 
+			    existingPlant.def == plantDef && existingPlant.Growth < 0.999f)
+			{
+				_averageHarvestGrowth += existingPlant.Growth;
+				existingPlant.DeSpawn(DestroyMode.Vanish);
+				_numStoredPlantsBuffer++;
+			}
+
+			return null;
+		}
+
+		[System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage]
+		private void TryFinishHarvest(ThingDef plantDef, bool footprintClear)
+		{
+			if (_bayStage != BayStage.Harvest || _numStoredPlants != 0 || !footprintClear) return;
 			
 			var completion = HydroCoreLogic.ResolveHarvestCompletion(
 				plantDef.plant.harvestAfterGrowth,

@@ -125,6 +125,21 @@ namespace HighDensityHydro.UnitTests
         }
 
         [Fact]
+        public void ShouldContinueHarvestJob_StopsAtVanillaBatchSize()
+        {
+            // Rice: 200 work per plant, so one job collects twelve plants through a single tile.
+            Assert.True(HydroCoreLogic.ShouldContinueHarvestJob(200f * 11, 0f, 200f));
+            Assert.False(HydroCoreLogic.ShouldContinueHarvestJob(200f * 12, 0f, 200f));
+        }
+
+        [Fact]
+        public void ShouldContinueHarvestJob_CountsPlantsStillQueued()
+        {
+            Assert.True(HydroCoreLogic.ShouldContinueHarvestJob(1600f, 600f, 200f));
+            Assert.False(HydroCoreLogic.ShouldContinueHarvestJob(1600f, 800f, 200f));
+        }
+
+        [Fact]
         public void ResolveHarvestCompletion_ResetsSingleHarvestPlants()
         {
             var result = HydroCoreLogic.ResolveHarvestCompletion(0f, 3, 1.2f, 2.8f, 1f, 4f, 2500, 0);
